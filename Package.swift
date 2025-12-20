@@ -5,10 +5,27 @@ import PackageDescription
 
 let package = Package(
     name: "FolderBar",
+    products: [
+        .library(
+            name: "FolderBarCore",
+            targets: ["FolderBarCore"]
+        ),
+        .executable(
+            name: "FolderBar",
+            targets: ["FolderBar"]
+        ),
+    ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
+        .target(
+            name: "FolderBarCore"
+        ),
         .executableTarget(
-            name: "FolderBar"),
+            name: "FolderBar",
+            dependencies: ["FolderBarCore"]
+        ),
+        .testTarget(
+            name: "FolderBarTests",
+            dependencies: ["FolderBarCore"]
+        ),
     ]
 )
