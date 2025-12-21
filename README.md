@@ -17,7 +17,7 @@ swift run FolderBar
 ## Package (macOS app bundle)
 
 ```bash
-./package_app.sh
+./Scripts/package_app.sh
 ```
 
 ## Test
