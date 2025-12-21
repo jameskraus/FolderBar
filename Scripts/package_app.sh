@@ -10,6 +10,7 @@ VERSION="${VERSION:-0.1.0}"
 
 cd "$ROOT_DIR"
 
+swift build -c "$CONFIG"
 BIN_DIR="$(swift build -c "$CONFIG" --show-bin-path)"
 EXECUTABLE="$BIN_DIR/$APP_NAME"
 
