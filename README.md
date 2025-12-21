@@ -28,6 +28,14 @@ swift build
 swift run FolderBar
 ```
 
+## Dev loop (package + relaunch)
+
+```bash
+./Scripts/compile_and_run.sh
+# or
+make compile_and_run
+```
+
 ## Package (macOS app bundle)
 
 ```bash

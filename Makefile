@@ -1,9 +1,10 @@
 APP_NAME := FolderBar
 APP_PATH := build/$(APP_NAME).app
 PACKAGE_SCRIPT := Scripts/package_app.sh
+COMPILE_RUN_SCRIPT := Scripts/compile_and_run.sh
 CONFIG ?= debug
 
-.PHONY: build package run dev
+.PHONY: build package run compile_and_run dev
 
 build:
 	swift build -c $(CONFIG)
@@ -14,4 +15,7 @@ package:
 run: package
 	open "$(APP_PATH)"
 
-dev: run
+compile_and_run:
+	$(COMPILE_RUN_SCRIPT) $(CONFIG)
+
+dev: compile_and_run
