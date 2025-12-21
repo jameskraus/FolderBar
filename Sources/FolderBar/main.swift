@@ -2,13 +2,16 @@ import AppKit
 import SwiftUI
 import os
 
-private let subsystem = Bundle.main.bundleIdentifier ?? "FolderBar"
-
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private let logger = Logger(subsystem: subsystem, category: "Lifecycle")
+    private static let subsystem = Bundle.main.bundleIdentifier ?? "FolderBar"
+    private let logger = Logger(subsystem: AppDelegate.subsystem, category: "Lifecycle")
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-    private let popover = NSPopover()
+    private lazy var panelController = MenuBarPanelController(
+        statusItem: statusItem,
+        rootView: AnyView(PlaceholderListView()),
+        contentSize: NSSize(width: 240, height: 180)
+    )
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         logger.info("Application finished launching")
@@ -17,11 +20,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             button.image = NSImage(systemSymbolName: "folder.fill", accessibilityDescription: "FolderBar")
             button.image?.isTemplate = true
             button.target = self
-            button.action = #selector(togglePopover(_:))
+            button.action = #selector(togglePanel(_:))
         }
-
-        popover.behavior = .applicationDefined
-        popover.contentViewController = NSHostingController(rootView: PlaceholderListView())
 
         NSApp.setActivationPolicy(.accessory)
     }
@@ -30,41 +30,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         logger.info("Application will terminate")
     }
 
-    @objc private func togglePopover(_ sender: Any?) {
-        logger.debug("Toggling popover")
-        guard let button = statusItem.button else {
-            logger.error("Status item button missing")
-            return
-        }
-
-        if popover.isShown {
-            popover.performClose(sender)
-        } else {
-            let preferredEdge: NSRectEdge = button.isFlipped ? .maxY : .minY
-            popover.show(relativeTo: button.bounds, of: button, preferredEdge: preferredEdge)
-            NSApp.activate(ignoringOtherApps: true)
-        }
+    @objc private func togglePanel(_ sender: Any?) {
+        panelController.toggle()
     }
 }
 
 struct PlaceholderListView: View {
+    private let items = [
+        "Example Folder A",
+        "Example Folder B",
+        "Example Folder C",
+    ]
+
     var body: some View {
-        List {
-            Text("Example Folder A")
-            Text("Example Folder B")
-            Text("Example Folder C")
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(items.indices, id: \.self) { index in
+                Text(items[index])
+                    .font(.system(size: 13))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if index < items.count - 1 {
+                    Divider()
+                }
+            }
         }
-        .frame(width: 240, height: 180)
+        .padding(12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 
-@main
-@MainActor
-struct FolderBarMain {
-    static func main() {
-        let app = NSApplication.shared
-        let delegate = AppDelegate()
-        app.delegate = delegate
-        app.run()
-    }
-}
+let app = NSApplication.shared
+let delegate = AppDelegate()
+app.delegate = delegate
+app.run()
