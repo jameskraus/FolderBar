@@ -8,7 +8,12 @@ Agents should skim that plan for the overall project goal and current direction.
 
 ## Parallel Agents
 
-Multiple agents may be active in this repo at the same time. Only commit the work you personally made, and avoid interfering with other agents' in-flight changes (especially untracked files or unrelated diffs).
+Multiple agents may be active in this repo at the same time. You must only commit your own work, and you should be deliberate about staging so you don't pick up other agents' changes.
+
+Guidelines:
+- Use `git status -sb` and `git diff` to review exactly what you are about to stage.
+- Prefer `git add <paths>` over `git add .` so you stage only your files.
+- If you see unrelated changes (including untracked files), leave them alone and ask before touching.
 
 ## Quick Reference
 
