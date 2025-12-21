@@ -40,7 +40,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if popover.isShown {
             popover.performClose(sender)
         } else {
-            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            let preferredEdge: NSRectEdge = button.isFlipped ? .maxY : .minY
+            popover.show(relativeTo: button.bounds, of: button, preferredEdge: preferredEdge)
             NSApp.activate(ignoringOtherApps: true)
         }
     }
