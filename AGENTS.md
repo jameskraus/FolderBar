@@ -3,6 +3,7 @@
 This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
 
 Local plans belong in the `plans/` folder, which is gitignored.
+Current plan: `plans/DEVELOPMENT_PLAN.md`.
 
 ## Quick Reference
 
