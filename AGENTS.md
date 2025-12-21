@@ -4,6 +4,11 @@ This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get sta
 
 Local plans belong in the `plans/` folder, which is gitignored.
 Current plan: `plans/DEVELOPMENT_PLAN.md`.
+Agents should skim that plan for the overall project goal and current direction.
+
+## Parallel Agents
+
+Multiple agents may be active in this repo at the same time. Only commit the work you personally made, and avoid interfering with other agents' in-flight changes (especially untracked files or unrelated diffs).
 
 ## Quick Reference
 
