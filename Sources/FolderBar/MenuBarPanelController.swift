@@ -7,13 +7,20 @@ final class MenuBarPanelController: NSObject {
     private let panel: MenuBarPanel
     private let hostingController: NSHostingController<AnyView>
     private let verticalOffset: CGFloat = 6
+    private let onShow: (() -> Void)?
 
     private var globalMouseMonitor: Any?
     private var localKeyMonitor: Any?
 
-    init(statusItem: NSStatusItem, rootView: AnyView, contentSize: NSSize) {
+    init(
+        statusItem: NSStatusItem,
+        rootView: AnyView,
+        contentSize: NSSize,
+        onShow: (() -> Void)? = nil
+    ) {
         self.statusItem = statusItem
         self.hostingController = NSHostingController(rootView: rootView)
+        self.onShow = onShow
 
         let styleMask: NSWindow.StyleMask = [
             .titled,
@@ -72,6 +79,7 @@ final class MenuBarPanelController: NSObject {
         button.state = .on
         panel.orderFrontRegardless()
         NSApp.activate(ignoringOtherApps: true)
+        onShow?()
         installMonitors()
     }
 

@@ -11,7 +11,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var panelController = MenuBarPanelController(
         statusItem: statusItem,
         rootView: AnyView(FolderPanelView(viewModel: folderSelectionViewModel)),
-        contentSize: NSSize(width: 240, height: 180)
+        contentSize: NSSize(width: 320, height: 520),
+        onShow: { [weak folderSelectionViewModel] in
+            folderSelectionViewModel?.refreshItems()
+        }
     )
 
     func applicationDidFinishLaunching(_ notification: Notification) {

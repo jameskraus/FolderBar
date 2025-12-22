@@ -1,6 +1,6 @@
 import Foundation
 
-public struct FolderScanner {
+public struct FolderScanner: Sendable {
     public init() {}
 
     public func scan(folderURL: URL) throws -> [FolderChildItem] {
