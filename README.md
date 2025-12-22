@@ -57,6 +57,15 @@ SIGN_ADHOC=1 ./Scripts/package_app.sh
 SIGN_ADHOC=0 ./Scripts/package_app.sh
 ```
 
+You can also set a local signing identity once in `.env.local` (ignored by git):
+
+```bash
+SIGNING_IDENTITY="Apple Development: Your Name (TEAMID)"
+SIGN_ADHOC=1
+```
+
+Both `Scripts/package_app.sh` and `Scripts/compile_and_run.sh` will source `.env.local` automatically.
+
 To list available identities:
 
 ```bash

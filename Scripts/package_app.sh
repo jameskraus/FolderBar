@@ -7,10 +7,16 @@ CONFIG="${1:-${CONFIG:-debug}}"
 OUTPUT_DIR="${OUTPUT_DIR:-$ROOT_DIR/build}"
 BUNDLE_ID="${BUNDLE_ID:-com.folderbar.app}"
 VERSION="${VERSION:-0.1.0}"
+ENV_FILE="$ROOT_DIR/.env.local"
 SIGNING_IDENTITY="${SIGNING_IDENTITY:-}"
 SIGN_ADHOC="${SIGN_ADHOC:-1}"
 
 cd "$ROOT_DIR"
+
+if [[ -f "$ENV_FILE" ]]; then
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+fi
 
 swift build -c "$CONFIG"
 BIN_DIR="$(swift build -c "$CONFIG" --show-bin-path)"

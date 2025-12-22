@@ -6,8 +6,14 @@ APP_NAME="FolderBar"
 CONFIG="${1:-${CONFIG:-debug}}"
 OUTPUT_DIR="${OUTPUT_DIR:-$ROOT_DIR/build}"
 PACKAGE_SCRIPT="$ROOT_DIR/Scripts/package_app.sh"
+ENV_FILE="$ROOT_DIR/.env.local"
 
 cd "$ROOT_DIR"
+
+if [[ -f "$ENV_FILE" ]]; then
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+fi
 
 "$PACKAGE_SCRIPT" "$CONFIG"
 
