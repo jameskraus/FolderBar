@@ -33,6 +33,10 @@ After any material app change, rebuild and relaunch the app:
 ./Scripts/compile_and_run.sh
 ```
 
+## Bead Close Notes
+
+When closing a bead, add brief implementation notes to the issue (what changed, any deviations, and follow-ups).
+
 ## Landing the Plane (Session Completion)
 
 **When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.

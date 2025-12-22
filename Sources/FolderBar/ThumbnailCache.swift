@@ -1,6 +1,6 @@
 import AppKit
 import Foundation
-import QuickLookThumbnailing
+@preconcurrency import QuickLookThumbnailing
 
 @MainActor
 final class ThumbnailCache {
@@ -28,22 +28,21 @@ final class ThumbnailCache {
         inFlight[url] = [completion]
 
         let scale = NSScreen.main?.backingScaleFactor ?? 2
-        let request = QLThumbnailGenerator.Request(
-            fileAt: url,
-            size: size,
-            scale: scale,
-            representationTypes: .thumbnail
-        )
-
-        QLThumbnailGenerator.shared.generateBestRepresentation(for: request) { [weak self] representation, _ in
+        Task { @MainActor [weak self, url, size] in
             guard let self else { return }
-            Task { @MainActor in
-                let image = representation?.nsImage ?? self.fallbackIcon(for: url, size: size)
-                image.size = size
-                self.cache.setObject(image, forKey: url as NSURL)
-                let callbacks = self.inFlight.removeValue(forKey: url) ?? []
-                callbacks.forEach { $0(image) }
-            }
+            let request = QLThumbnailGenerator.Request(
+                fileAt: url,
+                size: size,
+                scale: scale,
+                representationTypes: .thumbnail
+            )
+
+            let representation = try? await QLThumbnailGenerator.shared.generateBestRepresentation(for: request)
+            let image = representation?.nsImage ?? self.fallbackIcon(for: url, size: size)
+            image.size = size
+            self.cache.setObject(image, forKey: url as NSURL)
+            let callbacks = self.inFlight.removeValue(forKey: url) ?? []
+            callbacks.forEach { $0(image) }
         }
     }
 
