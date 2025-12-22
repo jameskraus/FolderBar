@@ -1,10 +1,10 @@
+<p align="center">
+  <img src="Assets/Readme/FolderBar.png" alt="FolderBar icon" width="128">
+</p>
+
 # FolderBar
 
 Menu bar app for surfacing folders and their contents.
-
-<p align="center">
-  <img src="Assets/Readme/FolderBar.png" alt="FolderBar icon" width="256">
-</p>
 
 ## Product goals (short list)
 
