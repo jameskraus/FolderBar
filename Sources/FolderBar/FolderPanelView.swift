@@ -12,7 +12,8 @@ struct FolderPanelView: View {
                 SelectedFolderView(
                     folderURL: folderURL,
                     items: viewModel.items,
-                    scrollToken: viewModel.scrollToken
+                    scrollToken: viewModel.scrollToken,
+                    onChangeFolder: viewModel.chooseFolder
                 )
             } else {
                 EmptyStateView(onChooseFolder: viewModel.chooseFolder)
@@ -30,6 +31,7 @@ private struct EmptyStateView: View {
 
     var body: some View {
         VStack(spacing: 12) {
+            Spacer(minLength: 0)
             Image(systemName: "folder")
                 .font(.system(size: 28, weight: .semibold))
             Text("No folder selected")
@@ -40,6 +42,8 @@ private struct EmptyStateView: View {
                 .multilineTextAlignment(.center)
             Button("Choose Folder", action: onChooseFolder)
                 .buttonStyle(DefaultButtonStyle())
+            Spacer(minLength: 0)
+            FooterMenuBar(onChangeFolder: onChooseFolder)
         }
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -50,6 +54,7 @@ private struct SelectedFolderView: View {
     let folderURL: URL
     let items: [FolderChildItem]
     let scrollToken: UUID
+    let onChangeFolder: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -62,6 +67,7 @@ private struct SelectedFolderView: View {
                     .lineLimit(2)
             }
             .padding(.horizontal, 12)
+            .padding(.trailing, 24)
 
             if items.isEmpty {
                 Text("No items found.")
@@ -69,6 +75,7 @@ private struct SelectedFolderView: View {
                     .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 12)
+                Spacer(minLength: 0)
             } else {
                 VStack(spacing: 0) {
                     Divider()
@@ -94,12 +101,39 @@ private struct SelectedFolderView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            FooterMenuBar(onChangeFolder: onChangeFolder)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private enum ScrollAnchor {
         static let top = "scrollTop"
+    }
+}
+
+private struct FooterMenuBar: View {
+    let onChangeFolder: () -> Void
+
+    var body: some View {
+        HStack {
+            Spacer()
+            Menu {
+                Button("Change Folder", action: onChangeFolder)
+                Button("Change Icon (coming soon)") {}
+                    .disabled(true)
+                Divider()
+                Button("Quit") {
+                    NSApplication.shared.terminate(nil)
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .font(.system(size: 16, weight: .semibold))
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 4)
     }
 }
 
