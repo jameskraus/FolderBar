@@ -13,11 +13,15 @@ final class FolderSelectionViewModel: ObservableObject {
     private let selectedFolderKey = "SelectedFolderPath"
     private let scanner = FolderScanner()
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "FolderBar", category: "FolderSelection")
+    private var watcher: DirectoryWatcher?
 
     init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
         if let path = userDefaults.string(forKey: selectedFolderKey) {
             selectedFolderURL = URL(fileURLWithPath: path)
+        }
+        if let folderURL = selectedFolderURL {
+            startWatching(folderURL)
         }
     }
 
@@ -58,16 +62,40 @@ final class FolderSelectionViewModel: ObservableObject {
     }
 
     private func updateSelectedFolder(_ url: URL) {
+        stopWatching()
         selectedFolderURL = url
         userDefaults.set(url.path, forKey: selectedFolderKey)
         items = []
+        startWatching(url)
         refreshItems()
     }
 
     private func clearSelection() {
+        stopWatching()
         selectedFolderURL = nil
         items = []
         userDefaults.removeObject(forKey: selectedFolderKey)
+    }
+
+    private func startWatching(_ url: URL) {
+        let watcher = DirectoryWatcher(url: url, debounceInterval: 0.2)
+        watcher.onChange = { [weak self] in
+            Task { @MainActor in
+                self?.refreshItems()
+            }
+        }
+        do {
+            try watcher.start()
+            self.watcher = watcher
+        } catch {
+            logger.error("Failed to start watcher: \(String(describing: error))")
+            clearSelection()
+        }
+    }
+
+    private func stopWatching() {
+        watcher?.stop()
+        watcher = nil
     }
 
     private func scanOnBackground(_ folderURL: URL) async throws -> [FolderChildItem] {
