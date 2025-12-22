@@ -1,4 +1,4 @@
-<p align="center">
+<p align="left">
   <img src="Assets/Readme/FolderBar.png" alt="FolderBar icon" width="128">
 </p>
 
