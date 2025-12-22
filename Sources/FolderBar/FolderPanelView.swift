@@ -80,16 +80,25 @@ private struct SelectedFolderView: View {
 private struct FolderItemRow: View {
     let item: FolderChildItem
     @State private var isHovering = false
+    @State private var thumbnail: NSImage?
+
+    private let thumbnailSize: CGFloat = 48
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(nsImage: icon)
+        HStack(spacing: 10) {
+            Image(nsImage: thumbnail ?? icon)
                 .resizable()
-                .frame(width: 20, height: 20)
-            Text(item.name)
-                .font(.system(size: 13))
-                .lineLimit(1)
-                .truncationMode(.middle)
+                .frame(width: thumbnailSize, height: thumbnailSize)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.name)
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Text(metadataText)
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
             Spacer(minLength: 0)
         }
         .padding(.vertical, 8)
@@ -106,6 +115,19 @@ private struct FolderItemRow: View {
                 return nil
             }
             return provider
+        }
+        .onAppear {
+            let size = CGSize(width: thumbnailSize, height: thumbnailSize)
+            ThumbnailCache.shared.requestThumbnail(for: item.url, size: size) { image in
+                thumbnail = image
+            }
+        }
+        .onChange(of: item.url) { _ in
+            thumbnail = nil
+            let size = CGSize(width: thumbnailSize, height: thumbnailSize)
+            ThumbnailCache.shared.requestThumbnail(for: item.url, size: size) { image in
+                thumbnail = image
+            }
         }
         .onHover { hovering in
             guard hovering != isHovering else { return }
@@ -126,7 +148,32 @@ private struct FolderItemRow: View {
 
     private var icon: NSImage {
         let image = NSWorkspace.shared.icon(forFile: item.url.path)
-        image.size = NSSize(width: 20, height: 20)
+        image.size = NSSize(width: thumbnailSize, height: thumbnailSize)
         return image
     }
+
+    private var metadataText: String {
+        "\(typeLabel) • \(relativeDateText)"
+    }
+
+    private var typeLabel: String {
+        if item.isDirectory {
+            return "Folder"
+        }
+        let ext = item.url.pathExtension
+        if ext.isEmpty {
+            return "File"
+        }
+        return ext.uppercased()
+    }
+
+    private var relativeDateText: String {
+        Self.relativeFormatter.localizedString(for: item.creationDate, relativeTo: Date())
+    }
+
+    private static let relativeFormatter: RelativeDateTimeFormatter = {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter
+    }()
 }
