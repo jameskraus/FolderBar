@@ -1,6 +1,7 @@
 import AppKit
 import FolderBarCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct FolderPanelView: View {
     @ObservedObject var viewModel: FolderSelectionViewModel
@@ -93,6 +94,19 @@ private struct FolderItemRow: View {
         }
         .padding(.vertical, 8)
         .contentShape(Rectangle())
+        .onDrag {
+            let provider = NSItemProvider(item: item.url as NSURL, typeIdentifier: UTType.fileURL.identifier)
+            provider.suggestedName = item.name
+            let pathData = Data(item.url.path.utf8)
+            provider.registerDataRepresentation(
+                forTypeIdentifier: UTType.utf8PlainText.identifier,
+                visibility: .all
+            ) { completion in
+                completion(pathData, nil)
+                return nil
+            }
+            return provider
+        }
         .onHover { hovering in
             guard hovering != isHovering else { return }
             isHovering = hovering
