@@ -2,6 +2,10 @@
 
 Menu bar app for surfacing folders and their contents.
 
+<p align="center">
+  <img src="Assets/Readme/FolderBar.png" alt="FolderBar icon" width="256">
+</p>
+
 ## Product goals (short list)
 
 - Native macOS menu bar app that shows immediate children of one or more folders.
