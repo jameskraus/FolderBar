@@ -19,7 +19,9 @@ jobs:
           swift-version: "6.1"
 
       - name: Install lint tools
-        run: brew install swiftformat swiftlint
+        run: |
+          command -v swiftformat >/dev/null 2>&1 || brew install swiftformat
+          command -v swiftlint >/dev/null 2>&1 || brew install swiftlint
 
       - name: Build
         run: swift build
