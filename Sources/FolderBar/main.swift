@@ -7,9 +7,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private static let subsystem = Bundle.main.bundleIdentifier ?? "FolderBar"
     private let logger = Logger(subsystem: AppDelegate.subsystem, category: "Lifecycle")
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+    private let folderSelectionViewModel = FolderSelectionViewModel()
     private lazy var panelController = MenuBarPanelController(
         statusItem: statusItem,
-        rootView: AnyView(PlaceholderListView()),
+        rootView: AnyView(FolderPanelView(viewModel: folderSelectionViewModel)),
         contentSize: NSSize(width: 240, height: 180)
     )
 
@@ -32,29 +33,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func togglePanel(_ sender: Any?) {
         panelController.toggle()
-    }
-}
-
-struct PlaceholderListView: View {
-    private let items = [
-        "Example Folder A",
-        "Example Folder B",
-        "Example Folder C",
-    ]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ForEach(items.indices, id: \.self) { index in
-                Text(items[index])
-                    .font(.system(size: 13))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                if index < items.count - 1 {
-                    Divider()
-                }
-            }
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 
