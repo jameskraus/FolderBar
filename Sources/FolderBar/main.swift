@@ -1,6 +1,6 @@
 import AppKit
-import SwiftUI
 import os
+import SwiftUI
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -20,7 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     )
 
-    func applicationDidFinishLaunching(_ notification: Notification) {
+    func applicationDidFinishLaunching(_: Notification) {
         logger.info("Application finished launching")
 
         if let button = statusItem.button {
@@ -33,11 +33,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
     }
 
-    func applicationWillTerminate(_ notification: Notification) {
+    func applicationWillTerminate(_: Notification) {
         logger.info("Application will terminate")
     }
 
-    @objc private func togglePanel(_ sender: Any?) {
+    @objc private func togglePanel(_: Any?) {
         panelController.toggle()
     }
 }

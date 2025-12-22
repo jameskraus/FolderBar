@@ -1,5 +1,5 @@
-import XCTest
 @testable import FolderBarCore
+import XCTest
 
 final class FolderScannerTests: XCTestCase {
     func testScanReturnsImmediateChildrenSortedByCreationDate() throws {

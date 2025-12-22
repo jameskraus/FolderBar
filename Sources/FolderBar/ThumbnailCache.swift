@@ -7,7 +7,7 @@ final class ThumbnailCache {
     static let shared = ThumbnailCache()
 
     private let cache = NSCache<NSURL, NSImage>()
-    private var inFlight: [URL: [((NSImage) -> Void)]] = [:]
+    private var inFlight: [URL: [(NSImage) -> Void]] = [:]
 
     private init() {
         cache.countLimit = 512
@@ -38,10 +38,10 @@ final class ThumbnailCache {
             )
 
             let representation = try? await QLThumbnailGenerator.shared.generateBestRepresentation(for: request)
-            let image = representation?.nsImage ?? self.fallbackIcon(for: url, size: size)
+            let image = representation?.nsImage ?? fallbackIcon(for: url, size: size)
             image.size = size
-            self.cache.setObject(image, forKey: url as NSURL)
-            let callbacks = self.inFlight.removeValue(forKey: url) ?? []
+            cache.setObject(image, forKey: url as NSURL)
+            let callbacks = inFlight.removeValue(forKey: url) ?? []
             callbacks.forEach { $0(image) }
         }
     }

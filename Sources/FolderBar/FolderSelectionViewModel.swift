@@ -40,7 +40,7 @@ final class FolderSelectionViewModel: ObservableObject {
         panel.begin { [weak self] response in
             guard let self else { return }
             guard response == .OK, let url = panel.url else { return }
-            self.updateSelectedFolder(url)
+            updateSelectedFolder(url)
         }
     }
 
@@ -54,12 +54,12 @@ final class FolderSelectionViewModel: ObservableObject {
             guard let self else { return }
             do {
                 let results = try await scanOnBackground(folderURL)
-                guard self.selectedFolderURL == folderURL else { return }
-                self.items = results
+                guard selectedFolderURL == folderURL else { return }
+                items = results
             } catch {
-                guard self.selectedFolderURL == folderURL else { return }
-                self.logger.error("Failed to scan folder: \(String(describing: error))")
-                self.clearSelection()
+                guard selectedFolderURL == folderURL else { return }
+                logger.error("Failed to scan folder: \(String(describing: error))")
+                clearSelection()
             }
         }
     }
@@ -134,7 +134,7 @@ final class FolderSelectionViewModel: ObservableObject {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
                 do {
-                    continuation.resume(returning: try scanner.scan(folderURL: folderURL))
+                    try continuation.resume(returning: scanner.scan(folderURL: folderURL))
                 } catch {
                     continuation.resume(throwing: error)
                 }

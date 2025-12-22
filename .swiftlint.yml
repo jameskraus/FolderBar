@@ -1,0 +1,25 @@
+included:
+  - Sources
+  - Tests
+
+excluded:
+  - .build
+  - build
+  - .swiftpm
+  - Packages
+
+disabled_rules:
+  - line_length
+  - type_body_length
+  - function_body_length
+  - file_length
+  - cyclomatic_complexity
+  - identifier_name
+  - nesting
+  - type_name
+  - force_cast
+  - force_try
+  - large_tuple
+  - todo
+
+reporter: "xcode"

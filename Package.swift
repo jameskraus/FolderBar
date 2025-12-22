@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "FolderBar",
     platforms: [
-        .macOS(.v11),
+        .macOS(.v11)
     ],
     products: [
         .library(
@@ -16,7 +16,7 @@ let package = Package(
         .executable(
             name: "FolderBar",
             targets: ["FolderBar"]
-        ),
+        )
     ],
     targets: [
         .target(
@@ -29,6 +29,6 @@ let package = Package(
         .testTarget(
             name: "FolderBarTests",
             dependencies: ["FolderBarCore"]
-        ),
+        )
     ]
 )

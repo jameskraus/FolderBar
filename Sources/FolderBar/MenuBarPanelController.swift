@@ -21,16 +21,16 @@ final class MenuBarPanelController: NSObject {
         onClose: (() -> Void)? = nil
     ) {
         self.statusItem = statusItem
-        self.hostingController = NSHostingController(rootView: rootView)
+        hostingController = NSHostingController(rootView: rootView)
         self.onShow = onShow
         self.onClose = onClose
 
         let styleMask: NSWindow.StyleMask = [
             .titled,
-            .fullSizeContentView,
+            .fullSizeContentView
         ]
 
-        self.panel = MenuBarPanel(
+        panel = MenuBarPanel(
             contentRect: NSRect(origin: .zero, size: contentSize),
             styleMask: styleMask,
             backing: .buffered,
@@ -58,7 +58,7 @@ final class MenuBarPanelController: NSObject {
             .moveToActiveSpace,
             .transient,
             .ignoresCycle,
-            .fullScreenAuxiliary,
+            .fullScreenAuxiliary
         ]
 
         panel.hidesOnDeactivate = false
@@ -133,21 +133,21 @@ final class MenuBarPanelController: NSObject {
             guard let self else { return }
 
             let mouse = NSEvent.mouseLocation
-            if self.panel.frame.contains(mouse) { return }
+            if panel.frame.contains(mouse) { return }
 
-            if let button = self.statusItem.button,
+            if let button = statusItem.button,
                let window = button.window {
                 let rect = window.convertToScreen(button.convert(button.bounds, to: nil))
                 if rect.contains(mouse) { return }
             }
 
-            self.close()
+            close()
         }
 
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { [weak self] event in
             guard let self else { return event }
             if event.keyCode == 53 {
-                self.close()
+                close()
                 return nil
             }
             return event

@@ -4,7 +4,7 @@ PACKAGE_SCRIPT := Scripts/package_app.sh
 COMPILE_RUN_SCRIPT := Scripts/compile_and_run.sh
 CONFIG ?= debug
 
-.PHONY: build package run compile_and_run dev
+.PHONY: build package run compile_and_run dev format lint
 
 build:
 	swift build -c $(CONFIG)
@@ -19,3 +19,9 @@ compile_and_run:
 	$(COMPILE_RUN_SCRIPT) $(CONFIG)
 
 dev: compile_and_run
+
+format:
+	swiftformat .
+
+lint:
+	swiftlint --strict --config .swiftlint.yml

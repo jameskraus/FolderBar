@@ -87,11 +87,11 @@ private struct SelectedFolderView: View {
                                 Color.clear
                                     .frame(height: 0)
                                     .id(ScrollAnchor.top)
-                            ForEach(items.indices, id: \.self) { index in
-                                FolderItemRow(item: items[index], now: now)
-                                if index < items.count - 1 {
-                                    Divider()
-                                }
+                                ForEach(items.indices, id: \.self) { index in
+                                    FolderItemRow(item: items[index], now: now)
+                                    if index < items.count - 1 {
+                                        Divider()
+                                    }
                                 }
                             }
                         }
@@ -226,7 +226,7 @@ private struct FolderItemRow: View {
 
     private var relativeDateText: String {
         let delta = now.timeIntervalSince(item.creationDate)
-        if delta > -60 && delta < 60 {
+        if delta > -60, delta < 60 {
             return "A moment ago"
         }
         if Calendar.current.isDateInToday(item.creationDate) {

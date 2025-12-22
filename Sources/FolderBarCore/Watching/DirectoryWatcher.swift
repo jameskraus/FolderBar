@@ -1,6 +1,6 @@
+import Darwin
 import Dispatch
 import Foundation
-import Darwin
 
 public final class DirectoryWatcher {
     public enum WatcherError: Swift.Error {
@@ -51,9 +51,9 @@ public final class DirectoryWatcher {
 
         source.setCancelHandler { [weak self] in
             guard let self else { return }
-            if self.fileDescriptor >= 0 {
-                close(self.fileDescriptor)
-                self.fileDescriptor = -1
+            if fileDescriptor >= 0 {
+                close(fileDescriptor)
+                fileDescriptor = -1
             }
         }
 

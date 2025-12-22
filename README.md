@@ -36,6 +36,14 @@ swift run FolderBar
 make compile_and_run
 ```
 
+## Lint / Format
+
+```bash
+brew install swiftformat swiftlint
+make format
+make lint
+```
+
 ## Package (macOS app bundle)
 
 ```bash

@@ -1,0 +1,5 @@
+--swiftversion 6.0
+--indent 4
+--trailing-commas never
+--disable wrapMultilineStatementBraces
+--exclude .build,build,.swiftpm,Packages
