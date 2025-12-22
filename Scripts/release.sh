@@ -6,6 +6,7 @@ APP_NAME="FolderBar"
 OUTPUT_DIR="${OUTPUT_DIR:-$ROOT_DIR/build}"
 PACKAGE_SCRIPT="$ROOT_DIR/Scripts/package_app.sh"
 NOTARIZE_SCRIPT="$ROOT_DIR/Scripts/notarize.sh"
+DMG_SCRIPT="$ROOT_DIR/Scripts/package_dmg.sh"
 VERSION_FILE="$ROOT_DIR/version.env"
 ENV_FILES=("$ROOT_DIR/.env" "$ROOT_DIR/.env.local")
 
@@ -48,8 +49,9 @@ fi
 
 NOTARY_ZIP="$OUTPUT_DIR/$APP_NAME-$VERSION-notarize.zip"
 FINAL_ZIP="$OUTPUT_DIR/$APP_NAME-$VERSION.zip"
+FINAL_DMG="$OUTPUT_DIR/$APP_NAME-$VERSION.dmg"
 
-rm -f "$NOTARY_ZIP" "$FINAL_ZIP"
+rm -f "$NOTARY_ZIP" "$FINAL_ZIP" "$FINAL_DMG"
 
 ditto -c -k --sequesterRsrc --keepParent "$APP_DIR" "$NOTARY_ZIP"
 "$NOTARIZE_SCRIPT" "$NOTARY_ZIP"
@@ -57,4 +59,8 @@ xcrun stapler staple "$APP_DIR"
 
 ditto -c -k --sequesterRsrc --keepParent "$APP_DIR" "$FINAL_ZIP"
 
-echo "Release artifact: $FINAL_ZIP"
+"$DMG_SCRIPT"
+
+echo "Release artifacts:"
+echo "  $FINAL_ZIP"
+echo "  $FINAL_DMG"

@@ -95,6 +95,10 @@ Then run:
 ./Scripts/release.sh
 ```
 
+Release outputs:
+- `build/FolderBar-<version>.zip`
+- `build/FolderBar-<version>.dmg`
+
 To list available identities:
 
 ```bash
