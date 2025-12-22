@@ -6,17 +6,44 @@ APP_NAME="FolderBar"
 CONFIG="${1:-${CONFIG:-debug}}"
 OUTPUT_DIR="${OUTPUT_DIR:-$ROOT_DIR/build}"
 BUNDLE_ID="${BUNDLE_ID:-com.folderbar.app}"
-VERSION="${VERSION:-0.1.0}"
-ENV_FILE="$ROOT_DIR/.env.local"
-SIGNING_IDENTITY="${SIGNING_IDENTITY:-}"
-SIGN_ADHOC="${SIGN_ADHOC:-1}"
+VERSION="${VERSION:-}"
+VERSION_FILE="$ROOT_DIR/version.env"
+ENV_FILES=("$ROOT_DIR/.env" "$ROOT_DIR/.env.local")
+SIGNING_IDENTITY_ENV_VALUE="${SIGNING_IDENTITY-}"
+SIGNING_IDENTITY_ENV_SET="${SIGNING_IDENTITY+1}"
+SIGN_ADHOC_ENV_VALUE="${SIGN_ADHOC-}"
+SIGN_ADHOC_ENV_SET="${SIGN_ADHOC+1}"
+SIGNING_FLAGS_ENV_VALUE="${SIGNING_FLAGS-}"
+SIGNING_FLAGS_ENV_SET="${SIGNING_FLAGS+1}"
+SIGNING_IDENTITY="${SIGNING_IDENTITY_ENV_VALUE:-}"
+SIGN_ADHOC="${SIGN_ADHOC_ENV_VALUE:-1}"
+SIGNING_FLAGS="${SIGNING_FLAGS_ENV_VALUE:-}"
 
 cd "$ROOT_DIR"
 
-if [[ -f "$ENV_FILE" ]]; then
-  # shellcheck disable=SC1090
-  source "$ENV_FILE"
+for env_file in "${ENV_FILES[@]}"; do
+  if [[ -f "$env_file" ]]; then
+    # shellcheck disable=SC1090
+    source "$env_file"
+  fi
+done
+
+if [[ -n "$SIGNING_IDENTITY_ENV_SET" ]]; then
+  SIGNING_IDENTITY="$SIGNING_IDENTITY_ENV_VALUE"
 fi
+if [[ -n "$SIGN_ADHOC_ENV_SET" ]]; then
+  SIGN_ADHOC="$SIGN_ADHOC_ENV_VALUE"
+fi
+if [[ -n "$SIGNING_FLAGS_ENV_SET" ]]; then
+  SIGNING_FLAGS="$SIGNING_FLAGS_ENV_VALUE"
+fi
+
+if [[ -f "$VERSION_FILE" ]]; then
+  # shellcheck disable=SC1090
+  source "$VERSION_FILE"
+fi
+
+VERSION="${VERSION:-0.1.0}"
 
 swift build -c "$CONFIG"
 BIN_DIR="$(swift build -c "$CONFIG" --show-bin-path)"
@@ -69,7 +96,12 @@ PLIST
 
 if [[ -n "$SIGNING_IDENTITY" ]]; then
   echo "Signing app with identity: $SIGNING_IDENTITY"
-  /usr/bin/codesign --force --sign "$SIGNING_IDENTITY" "$APP_DIR"
+  SIGNING_ARGS=(--force --sign "$SIGNING_IDENTITY")
+  if [[ -n "$SIGNING_FLAGS" ]]; then
+    # shellcheck disable=SC2206
+    SIGNING_ARGS+=($SIGNING_FLAGS)
+  fi
+  /usr/bin/codesign "${SIGNING_ARGS[@]}" "$APP_DIR"
 elif [[ "$SIGN_ADHOC" == "1" ]]; then
   echo "Ad-hoc signing app (set SIGNING_IDENTITY for Developer ID signing)"
   /usr/bin/codesign --force --sign - "$APP_DIR"

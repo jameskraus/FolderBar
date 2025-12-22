@@ -72,7 +72,24 @@ SIGNING_IDENTITY="Apple Development: Your Name (TEAMID)"
 SIGN_ADHOC=1
 ```
 
-Both `Scripts/package_app.sh` and `Scripts/compile_and_run.sh` will source `.env.local` automatically.
+Both `Scripts/package_app.sh` and `Scripts/compile_and_run.sh` will source `.env` and `.env.local` automatically (local overrides).
+
+## Release (signed + notarized)
+
+Create a `.env` file with release signing + notarization values:
+
+```bash
+RELEASE_SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)"
+NOTARY_KEY_ID="ABC123XYZ"
+NOTARY_ISSUER_ID="00000000-0000-0000-0000-000000000000"
+NOTARY_KEY_PATH="/path/to/AuthKey_ABC123XYZ.p8"
+```
+
+Then run:
+
+```bash
+./Scripts/release.sh
+```
 
 To list available identities:
 
