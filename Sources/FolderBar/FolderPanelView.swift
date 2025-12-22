@@ -21,8 +21,8 @@ struct FolderPanelView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.top, 8)
-        .padding(.bottom, 8)
+        .padding(.top, PanelLayout.topPadding)
+        .padding(.bottom, PanelLayout.bottomPadding)
         .ignoresSafeArea(.container, edges: .top)
     }
 }
@@ -46,7 +46,7 @@ private struct EmptyStateView: View {
             Spacer(minLength: 0)
             FooterMenuBar(onChangeFolder: onChooseFolder)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, PanelLayout.headerHorizontalPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -59,7 +59,7 @@ private struct SelectedFolderView: View {
     let onChangeFolder: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: PanelLayout.headerSpacing) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(folderURL.lastPathComponent)
                     .font(.system(size: 13, weight: .semibold))
@@ -68,7 +68,7 @@ private struct SelectedFolderView: View {
                     .foregroundColor(.secondary)
                     .lineLimit(2)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, PanelLayout.headerHorizontalPadding)
             .padding(.trailing, 24)
 
             if items.isEmpty {
@@ -76,7 +76,7 @@ private struct SelectedFolderView: View {
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, PanelLayout.headerHorizontalPadding)
                 Spacer(minLength: 0)
             } else {
                 VStack(spacing: 0) {
@@ -95,13 +95,15 @@ private struct SelectedFolderView: View {
                                 }
                             }
                         }
+                        .frame(height: PanelLayout.listHeight)
                         .onChange(of: scrollToken) { _ in
                             proxy.scrollTo(ScrollAnchor.top, anchor: .top)
                         }
                     }
                     Divider()
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(maxWidth: .infinity)
+                .frame(height: PanelLayout.listContainerHeight)
             }
             FooterMenuBar(onChangeFolder: onChangeFolder)
         }
@@ -134,7 +136,7 @@ private struct FooterMenuBar: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, PanelLayout.headerHorizontalPadding)
         .padding(.top, 4)
     }
 }
@@ -145,7 +147,7 @@ private struct FolderItemRow: View {
     @State private var isHovering = false
     @State private var thumbnail: NSImage?
 
-    private let thumbnailSize: CGFloat = 48
+    private let thumbnailSize: CGFloat = PanelLayout.thumbnailSize
 
     var body: some View {
         HStack(spacing: 10) {
@@ -164,8 +166,8 @@ private struct FolderItemRow: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
+        .padding(.vertical, PanelLayout.rowVerticalPadding)
+        .padding(.horizontal, PanelLayout.rowHorizontalPadding)
         .contentShape(Rectangle())
         .onDrag {
             let provider = NSItemProvider(item: item.url as NSURL, typeIdentifier: UTType.fileURL.identifier)

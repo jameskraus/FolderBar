@@ -11,7 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var panelController = MenuBarPanelController(
         statusItem: statusItem,
         rootView: AnyView(FolderPanelView(viewModel: folderSelectionViewModel)),
-        contentSize: NSSize(width: 320, height: 520),
+        contentSize: PanelLayout.contentSize,
         onShow: { [weak folderSelectionViewModel] in
             folderSelectionViewModel?.panelDidOpen()
         },
