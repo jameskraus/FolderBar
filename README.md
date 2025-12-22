@@ -42,6 +42,27 @@ make compile_and_run
 ./Scripts/package_app.sh
 ```
 
+## Local code signing (optional)
+
+`Scripts/package_app.sh` supports optional signing to reduce local permission prompts.
+
+```bash
+# Use a Developer ID or local signing identity
+SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)" ./Scripts/package_app.sh
+
+# Or force ad-hoc signing (default when SIGNING_IDENTITY is unset)
+SIGN_ADHOC=1 ./Scripts/package_app.sh
+
+# Skip signing entirely
+SIGN_ADHOC=0 ./Scripts/package_app.sh
+```
+
+To list available identities:
+
+```bash
+security find-identity -v -p codesigning
+```
+
 ## Test
 
 ```bash

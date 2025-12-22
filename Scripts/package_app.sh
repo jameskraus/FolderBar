@@ -7,6 +7,8 @@ CONFIG="${1:-${CONFIG:-debug}}"
 OUTPUT_DIR="${OUTPUT_DIR:-$ROOT_DIR/build}"
 BUNDLE_ID="${BUNDLE_ID:-com.folderbar.app}"
 VERSION="${VERSION:-0.1.0}"
+SIGNING_IDENTITY="${SIGNING_IDENTITY:-}"
+SIGN_ADHOC="${SIGN_ADHOC:-1}"
 
 cd "$ROOT_DIR"
 
@@ -58,5 +60,15 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
 </dict>
 </plist>
 PLIST
+
+if [[ -n "$SIGNING_IDENTITY" ]]; then
+  echo "Signing app with identity: $SIGNING_IDENTITY"
+  /usr/bin/codesign --force --sign "$SIGNING_IDENTITY" "$APP_DIR"
+elif [[ "$SIGN_ADHOC" == "1" ]]; then
+  echo "Ad-hoc signing app (set SIGNING_IDENTITY for Developer ID signing)"
+  /usr/bin/codesign --force --sign - "$APP_DIR"
+else
+  echo "Skipping code signing (set SIGNING_IDENTITY or SIGN_ADHOC=1 to sign)"
+fi
 
 echo "Packaged $APP_DIR"
