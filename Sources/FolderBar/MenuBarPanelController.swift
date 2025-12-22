@@ -8,6 +8,7 @@ final class MenuBarPanelController: NSObject {
     private let hostingController: NSHostingController<AnyView>
     private let verticalOffset: CGFloat = 6
     private let onShow: (() -> Void)?
+    private let onClose: (() -> Void)?
 
     private var globalMouseMonitor: Any?
     private var localKeyMonitor: Any?
@@ -16,11 +17,13 @@ final class MenuBarPanelController: NSObject {
         statusItem: NSStatusItem,
         rootView: AnyView,
         contentSize: NSSize,
-        onShow: (() -> Void)? = nil
+        onShow: (() -> Void)? = nil,
+        onClose: (() -> Void)? = nil
     ) {
         self.statusItem = statusItem
         self.hostingController = NSHostingController(rootView: rootView)
         self.onShow = onShow
+        self.onClose = onClose
 
         let styleMask: NSWindow.StyleMask = [
             .titled,
@@ -87,6 +90,7 @@ final class MenuBarPanelController: NSObject {
         panel.orderOut(nil)
         statusItem.button?.state = .off
         removeMonitors()
+        onClose?()
     }
 
     private func positionPanel(relativeTo button: NSStatusBarButton) {

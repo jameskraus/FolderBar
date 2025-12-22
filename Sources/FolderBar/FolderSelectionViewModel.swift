@@ -9,12 +9,14 @@ final class FolderSelectionViewModel: ObservableObject {
     @Published private(set) var selectedFolderURL: URL?
     @Published private(set) var items: [FolderChildItem] = []
     @Published private(set) var scrollToken = UUID()
+    @Published private(set) var now = Date()
 
     private let userDefaults: UserDefaults
     private let selectedFolderKey = "SelectedFolderPath"
     private let scanner = FolderScanner()
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "FolderBar", category: "FolderSelection")
     private var watcher: DirectoryWatcher?
+    private var refreshTimer: Timer?
 
     init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
@@ -64,7 +66,30 @@ final class FolderSelectionViewModel: ObservableObject {
 
     func panelDidOpen() {
         scrollToken = UUID()
+        now = Date()
         refreshItems()
+        startRelativeTimeTimer()
+    }
+
+    func panelDidClose() {
+        stopRelativeTimeTimer()
+    }
+
+    private func startRelativeTimeTimer() {
+        refreshTimer?.invalidate()
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.now = Date()
+            }
+        }
+        if let refreshTimer {
+            RunLoop.main.add(refreshTimer, forMode: .common)
+        }
+    }
+
+    private func stopRelativeTimeTimer() {
+        refreshTimer?.invalidate()
+        refreshTimer = nil
     }
 
     private func updateSelectedFolder(_ url: URL) {

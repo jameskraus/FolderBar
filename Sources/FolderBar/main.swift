@@ -14,6 +14,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         contentSize: NSSize(width: 320, height: 520),
         onShow: { [weak folderSelectionViewModel] in
             folderSelectionViewModel?.panelDidOpen()
+        },
+        onClose: { [weak folderSelectionViewModel] in
+            folderSelectionViewModel?.panelDidClose()
         }
     )
 

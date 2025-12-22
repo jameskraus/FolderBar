@@ -13,6 +13,7 @@ struct FolderPanelView: View {
                     folderURL: folderURL,
                     items: viewModel.items,
                     scrollToken: viewModel.scrollToken,
+                    now: viewModel.now,
                     onChangeFolder: viewModel.chooseFolder
                 )
             } else {
@@ -54,6 +55,7 @@ private struct SelectedFolderView: View {
     let folderURL: URL
     let items: [FolderChildItem]
     let scrollToken: UUID
+    let now: Date
     let onChangeFolder: () -> Void
 
     var body: some View {
@@ -85,11 +87,11 @@ private struct SelectedFolderView: View {
                                 Color.clear
                                     .frame(height: 0)
                                     .id(ScrollAnchor.top)
-                                ForEach(items.indices, id: \.self) { index in
-                                    FolderItemRow(item: items[index])
-                                    if index < items.count - 1 {
-                                        Divider()
-                                    }
+                            ForEach(items.indices, id: \.self) { index in
+                                FolderItemRow(item: items[index], now: now)
+                                if index < items.count - 1 {
+                                    Divider()
+                                }
                                 }
                             }
                         }
@@ -139,6 +141,7 @@ private struct FooterMenuBar: View {
 
 private struct FolderItemRow: View {
     let item: FolderChildItem
+    let now: Date
     @State private var isHovering = false
     @State private var thumbnail: NSImage?
 
@@ -214,27 +217,48 @@ private struct FolderItemRow: View {
     }
 
     private var metadataText: String {
-        "\(typeLabel) • \(relativeDateText)"
-    }
-
-    private var typeLabel: String {
-        if item.isDirectory {
-            return "Folder"
+        var parts: [String] = [relativeDateText]
+        if let sizeText {
+            parts.append(sizeText)
         }
-        let ext = item.url.pathExtension
-        if ext.isEmpty {
-            return "File"
-        }
-        return ext.uppercased()
+        return parts.joined(separator: "  ")
     }
 
     private var relativeDateText: String {
-        Self.relativeFormatter.localizedString(for: item.creationDate, relativeTo: Date())
+        let delta = now.timeIntervalSince(item.creationDate)
+        if delta > -60 && delta < 60 {
+            return "A moment ago"
+        }
+        if Calendar.current.isDateInToday(item.creationDate) {
+            return Self.relativeFormatter.localizedString(for: item.creationDate, relativeTo: now)
+        }
+        return Self.dateFormatter.string(from: item.creationDate)
     }
 
     private static let relativeFormatter: RelativeDateTimeFormatter = {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
+        return formatter
+    }()
+
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter
+    }()
+
+    private var sizeText: String? {
+        guard !item.isDirectory, let fileSize = item.fileSize else { return nil }
+        return Self.byteCountFormatter.string(fromByteCount: fileSize)
+    }
+
+    private static let byteCountFormatter: ByteCountFormatter = {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        formatter.allowedUnits = [.useKB, .useMB, .useGB]
+        formatter.includesUnit = true
+        formatter.isAdaptive = true
         return formatter
     }()
 }

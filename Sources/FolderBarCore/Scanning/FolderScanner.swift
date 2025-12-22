@@ -8,7 +8,8 @@ public struct FolderScanner: Sendable {
             .nameKey,
             .isDirectoryKey,
             .creationDateKey,
-            .contentModificationDateKey
+            .contentModificationDateKey,
+            .fileSizeKey
         ]
 
         let childURLs = try FileManager.default.contentsOfDirectory(
@@ -24,12 +25,14 @@ public struct FolderScanner: Sendable {
             let creationDate = resourceValues.creationDate
                 ?? resourceValues.contentModificationDate
                 ?? Date.distantPast
+            let fileSize = resourceValues.fileSize.map { Int64($0) }
 
             return FolderChildItem(
                 url: url,
                 name: name,
                 isDirectory: isDirectory,
-                creationDate: creationDate
+                creationDate: creationDate,
+                fileSize: fileSize
             )
         }
 
