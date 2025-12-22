@@ -13,7 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         rootView: AnyView(FolderPanelView(viewModel: folderSelectionViewModel)),
         contentSize: NSSize(width: 320, height: 520),
         onShow: { [weak folderSelectionViewModel] in
-            folderSelectionViewModel?.refreshItems()
+            folderSelectionViewModel?.panelDidOpen()
         }
     )
 

@@ -9,13 +9,19 @@ struct FolderPanelView: View {
     var body: some View {
         Group {
             if let folderURL = viewModel.selectedFolderURL {
-                SelectedFolderView(folderURL: folderURL, items: viewModel.items)
+                SelectedFolderView(
+                    folderURL: folderURL,
+                    items: viewModel.items,
+                    scrollToken: viewModel.scrollToken
+                )
             } else {
                 EmptyStateView(onChooseFolder: viewModel.chooseFolder)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(12)
+        .padding(.top, 8)
+        .padding(.bottom, 8)
+        .ignoresSafeArea(.container, edges: .top)
     }
 }
 
@@ -35,6 +41,7 @@ private struct EmptyStateView: View {
             Button("Choose Folder", action: onChooseFolder)
                 .buttonStyle(DefaultButtonStyle())
         }
+        .padding(.horizontal, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -42,9 +49,10 @@ private struct EmptyStateView: View {
 private struct SelectedFolderView: View {
     let folderURL: URL
     let items: [FolderChildItem]
+    let scrollToken: UUID
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 4) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(folderURL.lastPathComponent)
                     .font(.system(size: 13, weight: .semibold))
@@ -53,27 +61,45 @@ private struct SelectedFolderView: View {
                     .foregroundColor(.secondary)
                     .lineLimit(2)
             }
+            .padding(.horizontal, 12)
 
             if items.isEmpty {
                 Text("No items found.")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
             } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 0) {
-                        ForEach(items.indices, id: \.self) { index in
-                            FolderItemRow(item: items[index])
-                            if index < items.count - 1 {
-                                Divider()
+                VStack(spacing: 0) {
+                    Divider()
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            LazyVStack(alignment: .leading, spacing: 0) {
+                                Color.clear
+                                    .frame(height: 0)
+                                    .id(ScrollAnchor.top)
+                                ForEach(items.indices, id: \.self) { index in
+                                    FolderItemRow(item: items[index])
+                                    if index < items.count - 1 {
+                                        Divider()
+                                    }
+                                }
                             }
                         }
+                        .onChange(of: scrollToken) { _ in
+                            proxy.scrollTo(ScrollAnchor.top, anchor: .top)
+                        }
                     }
+                    Divider()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private enum ScrollAnchor {
+        static let top = "scrollTop"
     }
 }
 
@@ -102,6 +128,7 @@ private struct FolderItemRow: View {
             Spacer(minLength: 0)
         }
         .padding(.vertical, 8)
+        .padding(.horizontal, 12)
         .contentShape(Rectangle())
         .onDrag {
             let provider = NSItemProvider(item: item.url as NSURL, typeIdentifier: UTType.fileURL.identifier)

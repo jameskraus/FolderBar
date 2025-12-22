@@ -8,6 +8,7 @@ import os
 final class FolderSelectionViewModel: ObservableObject {
     @Published private(set) var selectedFolderURL: URL?
     @Published private(set) var items: [FolderChildItem] = []
+    @Published private(set) var scrollToken = UUID()
 
     private let userDefaults: UserDefaults
     private let selectedFolderKey = "SelectedFolderPath"
@@ -59,6 +60,11 @@ final class FolderSelectionViewModel: ObservableObject {
                 self.clearSelection()
             }
         }
+    }
+
+    func panelDidOpen() {
+        scrollToken = UUID()
+        refreshItems()
     }
 
     private func updateSelectedFolder(_ url: URL) {
