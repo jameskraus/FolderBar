@@ -15,7 +15,7 @@ public struct FolderScanner: Sendable {
         let childURLs = try FileManager.default.contentsOfDirectory(
             at: folderURL,
             includingPropertiesForKeys: Array(resourceKeys),
-            options: []
+            options: [.skipsHiddenFiles]
         )
 
         let items = try childURLs.map { url -> FolderChildItem in
