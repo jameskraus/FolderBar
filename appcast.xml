@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>FolderBar Updates</title>
+    <link>https://github.com/jameskraus/FolderBar</link>
+    <description>Appcast for FolderBar (Sparkle)</description>
+    <language>en</language>
+
+    <!--
+      Release automation will insert new <item> entries here (newest first).
+
+      Expected enclosure URL format:
+        https://github.com/jameskraus/FolderBar/releases/download/v<VERSION>/FolderBar-<VERSION>.zip
+    -->
+  </channel>
+</rss>
+
