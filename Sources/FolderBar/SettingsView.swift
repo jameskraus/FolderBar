@@ -24,6 +24,7 @@ struct SettingsView: View {
                     }
                     Spacer()
                     Button("Change…", action: onChooseFolder)
+                        .disabled(viewModel.isFolderPickerPresented)
                 }
             }
 
@@ -52,12 +53,13 @@ struct SettingsView: View {
 
             Spacer()
 
-            Button(action: {
-                showingResetAlert = true
-            }) {
-                Text("Reset All Settings")
-                    .foregroundColor(.red)
-            }
+            Button(
+                action: { showingResetAlert = true },
+                label: {
+                    Text("Reset All Settings")
+                        .foregroundColor(.red)
+                }
+            )
             .buttonStyle(DefaultButtonStyle())
         }
         .padding(.horizontal, 20)

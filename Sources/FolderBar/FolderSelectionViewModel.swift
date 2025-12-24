@@ -10,6 +10,7 @@ final class FolderSelectionViewModel: ObservableObject {
     @Published private(set) var items: [FolderChildItem] = []
     @Published private(set) var scrollToken = UUID()
     @Published private(set) var now = Date()
+    @Published private(set) var isFolderPickerPresented = false
 
     private let userDefaults: UserDefaults
     private let selectedFolderKey = "SelectedFolderPath"
@@ -32,6 +33,8 @@ final class FolderSelectionViewModel: ObservableObject {
     }
 
     func chooseFolderFromPopover() {
+        guard !isFolderPickerPresented else { return }
+        isFolderPickerPresented = true
         requestClosePopover?()
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
@@ -41,12 +44,15 @@ final class FolderSelectionViewModel: ObservableObject {
                 if response == .OK, let url {
                     updateSelectedFolder(url)
                 }
+                isFolderPickerPresented = false
                 requestReopenPopover?()
             }
         }
     }
 
     func chooseFolderFromSettings(presentingWindow: NSWindow?) {
+        guard !isFolderPickerPresented else { return }
+        isFolderPickerPresented = true
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             NSApp.activate(ignoringOtherApps: true)
@@ -55,6 +61,7 @@ final class FolderSelectionViewModel: ObservableObject {
                 if response == .OK, let url {
                     updateSelectedFolder(url)
                 }
+                isFolderPickerPresented = false
             }
         }
     }
