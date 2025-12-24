@@ -47,8 +47,18 @@ if [[ -f "$VERSION_FILE" ]]; then
 fi
 
 VERSION="${VERSION:-0.1.0}"
+DEFAULT_SPARKLE_FEED_URL="https://raw.githubusercontent.com/jameskraus/FolderBar/main/appcast.xml"
+
 SPARKLE_FEED_URL="${SPARKLE_FEED_URL:-}"
 SPARKLE_PUBLIC_ED_KEY="${SPARKLE_PUBLIC_ED_KEY:-}"
+
+if [[ "$CONFIG" == "release" ]]; then
+  SPARKLE_FEED_URL="${SPARKLE_FEED_URL:-$DEFAULT_SPARKLE_FEED_URL}"
+  if [[ -z "$SPARKLE_PUBLIC_ED_KEY" ]]; then
+    echo "SPARKLE_PUBLIC_ED_KEY is not set (required for release builds)" >&2
+    exit 1
+  fi
+fi
 
 swift build -c "$CONFIG"
 BIN_DIR="$(swift build -c "$CONFIG" --show-bin-path)"
@@ -74,12 +84,15 @@ cp "$EXECUTABLE" "$MACOS_DIR/$APP_NAME"
 SPARKLE_FRAMEWORK_SOURCE="$BIN_DIR/Sparkle.framework"
 SPARKLE_FRAMEWORK_DEST="$FRAMEWORKS_DIR/Sparkle.framework"
 
-if [[ -d "$SPARKLE_FRAMEWORK_SOURCE" ]]; then
-  ditto "$SPARKLE_FRAMEWORK_SOURCE" "$SPARKLE_FRAMEWORK_DEST"
+if [[ ! -d "$SPARKLE_FRAMEWORK_SOURCE" ]]; then
+  echo "Sparkle.framework not found at expected path: $SPARKLE_FRAMEWORK_SOURCE" >&2
+  exit 1
+fi
 
-  if ! otool -l "$MACOS_DIR/$APP_NAME" | grep -q "@executable_path/../Frameworks"; then
-    install_name_tool -add_rpath "@executable_path/../Frameworks" "$MACOS_DIR/$APP_NAME"
-  fi
+ditto "$SPARKLE_FRAMEWORK_SOURCE" "$SPARKLE_FRAMEWORK_DEST"
+
+if ! otool -l "$MACOS_DIR/$APP_NAME" | grep -q "@executable_path/../Frameworks"; then
+  install_name_tool -add_rpath "@executable_path/../Frameworks" "$MACOS_DIR/$APP_NAME"
 fi
 
 if [[ ! -f "$ICON_SOURCE_PNG" ]]; then
