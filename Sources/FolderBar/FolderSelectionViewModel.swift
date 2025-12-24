@@ -18,6 +18,10 @@ final class FolderSelectionViewModel: ObservableObject {
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "FolderBar", category: "FolderSelection")
     private var watcher: DirectoryWatcher?
     private var refreshTimer: Timer?
+    private var activeOpenPanel: NSOpenPanel?
+    private weak var activeOpenPanelPresentingWindow: NSWindow?
+    private var openPanelPreviousActivationPolicy: NSApplication.ActivationPolicy?
+    private var shouldReopenPopoverAfterPickerCloses = false
 
     var requestClosePopover: (() -> Void)?
     var requestReopenPopover: (() -> Void)?
@@ -33,34 +37,29 @@ final class FolderSelectionViewModel: ObservableObject {
     }
 
     func chooseFolderFromPopover() {
-        guard !isFolderPickerPresented else { return }
-        isFolderPickerPresented = true
+        shouldReopenPopoverAfterPickerCloses = true
         requestClosePopover?()
+        guard !isFolderPickerPresented else {
+            focusFolderPicker()
+            return
+        }
+        isFolderPickerPresented = true
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            presentOpenPanel(presentingWindow: nil) { [weak self] response, url in
-                guard let self else { return }
-                if response == .OK, let url {
-                    updateSelectedFolder(url)
-                }
-                isFolderPickerPresented = false
-                requestReopenPopover?()
-            }
+            presentOpenPanel(presentingWindow: nil)
         }
     }
 
     func chooseFolderFromSettings(presentingWindow: NSWindow?) {
-        guard !isFolderPickerPresented else { return }
+        guard !isFolderPickerPresented else {
+            focusFolderPicker()
+            return
+        }
+        shouldReopenPopoverAfterPickerCloses = false
         isFolderPickerPresented = true
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            presentOpenPanel(presentingWindow: presentingWindow) { [weak self] response, url in
-                guard let self else { return }
-                if response == .OK, let url {
-                    updateSelectedFolder(url)
-                }
-                isFolderPickerPresented = false
-            }
+            presentOpenPanel(presentingWindow: presentingWindow)
         }
     }
 
@@ -133,9 +132,13 @@ final class FolderSelectionViewModel: ObservableObject {
     }
 
     private func presentOpenPanel(
-        presentingWindow: NSWindow?,
-        completion: @escaping (NSApplication.ModalResponse, URL?) -> Void
+        presentingWindow: NSWindow?
     ) {
+        guard activeOpenPanel == nil else {
+            focusFolderPicker()
+            return
+        }
+
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
@@ -145,19 +148,30 @@ final class FolderSelectionViewModel: ObservableObject {
         panel.prompt = "Choose"
         panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
 
-        let previousActivationPolicy = activateForUserInteraction()
+        activeOpenPanel = panel
+        activeOpenPanelPresentingWindow = presentingWindow
+
+        beginAppActivationForOpenPanel()
         presentingWindow?.makeKeyAndOrderFront(nil)
 
+        let handleResponse: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            guard let self else { return }
+            if response == .OK, let url = panel.url {
+                updateSelectedFolder(url)
+            }
+            activeOpenPanel = nil
+            activeOpenPanelPresentingWindow = nil
+            isFolderPickerPresented = false
+            restoreActivationPolicyIfNeeded()
+            if shouldReopenPopoverAfterPickerCloses {
+                requestReopenPopover?()
+            }
+        }
+
         if let presentingWindow {
-            panel.beginSheetModal(for: presentingWindow) { [weak self] response in
-                completion(response, panel.url)
-                self?.restoreActivationPolicy(previousActivationPolicy)
-            }
+            panel.beginSheetModal(for: presentingWindow, completionHandler: handleResponse)
         } else {
-            panel.begin { [weak self] response in
-                completion(response, panel.url)
-                self?.restoreActivationPolicy(previousActivationPolicy)
-            }
+            panel.begin(completionHandler: handleResponse)
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
@@ -166,17 +180,38 @@ final class FolderSelectionViewModel: ObservableObject {
         }
     }
 
-    private func activateForUserInteraction() -> NSApplication.ActivationPolicy {
-        let previousPolicy = NSApp.activationPolicy()
-        if previousPolicy != .regular {
-            _ = NSApp.setActivationPolicy(.regular)
+    private func focusFolderPicker() {
+        guard let activeOpenPanel else {
+            isFolderPickerPresented = false
+            restoreActivationPolicyIfNeeded()
+            return
         }
-        NSRunningApplication.current.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
-        NSApp.activate(ignoringOtherApps: true)
-        return previousPolicy
+
+        beginAppActivationForOpenPanel()
+        activeOpenPanelPresentingWindow?.makeKeyAndOrderFront(nil)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            activeOpenPanel.orderFrontRegardless()
+            activeOpenPanel.makeKeyAndOrderFront(nil)
+        }
     }
 
-    private func restoreActivationPolicy(_ policy: NSApplication.ActivationPolicy) {
+    private func beginAppActivationForOpenPanel() {
+        if openPanelPreviousActivationPolicy == nil {
+            openPanelPreviousActivationPolicy = NSApp.activationPolicy()
+        }
+        if NSApp.activationPolicy() != .regular {
+            _ = NSApp.setActivationPolicy(.regular)
+        }
+        NSApp.unhide(nil)
+        NSRunningApplication.current.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func restoreActivationPolicyIfNeeded() {
+        guard activeOpenPanel == nil else { return }
+        guard let policy = openPanelPreviousActivationPolicy else { return }
+        openPanelPreviousActivationPolicy = nil
         guard NSApp.activationPolicy() != policy else { return }
         DispatchQueue.main.async {
             _ = NSApp.setActivationPolicy(policy)
