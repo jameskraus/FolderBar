@@ -38,7 +38,6 @@ final class FolderSelectionViewModel: ObservableObject {
         requestClosePopover?()
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            NSApp.activate(ignoringOtherApps: true)
             presentOpenPanel(presentingWindow: nil) { [weak self] response, url in
                 guard let self else { return }
                 if response == .OK, let url {
@@ -55,7 +54,6 @@ final class FolderSelectionViewModel: ObservableObject {
         isFolderPickerPresented = true
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            NSApp.activate(ignoringOtherApps: true)
             presentOpenPanel(presentingWindow: presentingWindow) { [weak self] response, url in
                 guard let self else { return }
                 if response == .OK, let url {
@@ -145,28 +143,44 @@ final class FolderSelectionViewModel: ObservableObject {
         panel.canCreateDirectories = false
         panel.title = "Choose a Folder"
         panel.prompt = "Choose"
+        panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
 
-        activateForUserInteraction()
+        let previousActivationPolicy = activateForUserInteraction()
         presentingWindow?.makeKeyAndOrderFront(nil)
 
         if let presentingWindow {
-            panel.beginSheetModal(for: presentingWindow) { response in
+            panel.beginSheetModal(for: presentingWindow) { [weak self] response in
                 completion(response, panel.url)
+                self?.restoreActivationPolicy(previousActivationPolicy)
             }
         } else {
-            panel.begin { response in
+            panel.begin { [weak self] response in
                 completion(response, panel.url)
+                self?.restoreActivationPolicy(previousActivationPolicy)
             }
         }
 
-        DispatchQueue.main.async {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            panel.orderFrontRegardless()
             panel.makeKeyAndOrderFront(nil)
         }
     }
 
-    private func activateForUserInteraction() {
+    private func activateForUserInteraction() -> NSApplication.ActivationPolicy {
+        let previousPolicy = NSApp.activationPolicy()
+        if previousPolicy != .regular {
+            _ = NSApp.setActivationPolicy(.regular)
+        }
         NSRunningApplication.current.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
         NSApp.activate(ignoringOtherApps: true)
+        return previousPolicy
+    }
+
+    private func restoreActivationPolicy(_ policy: NSApplication.ActivationPolicy) {
+        guard NSApp.activationPolicy() != policy else { return }
+        DispatchQueue.main.async {
+            _ = NSApp.setActivationPolicy(policy)
+        }
     }
 
     private func clearSelection() {
