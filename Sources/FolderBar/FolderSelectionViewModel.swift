@@ -146,6 +146,9 @@ final class FolderSelectionViewModel: ObservableObject {
         panel.title = "Choose a Folder"
         panel.prompt = "Choose"
 
+        activateForUserInteraction()
+        presentingWindow?.makeKeyAndOrderFront(nil)
+
         if let presentingWindow {
             panel.beginSheetModal(for: presentingWindow) { response in
                 completion(response, panel.url)
@@ -155,6 +158,15 @@ final class FolderSelectionViewModel: ObservableObject {
                 completion(response, panel.url)
             }
         }
+
+        DispatchQueue.main.async {
+            panel.makeKeyAndOrderFront(nil)
+        }
+    }
+
+    private func activateForUserInteraction() {
+        NSRunningApplication.current.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     private func clearSelection() {
