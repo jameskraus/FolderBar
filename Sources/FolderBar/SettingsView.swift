@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var viewModel: FolderSelectionViewModel
+    @ObservedObject var updater: FolderBarUpdater
     let appVersion: String
     let onChooseFolder: () -> Void
     let onResetAll: () -> Void
@@ -37,6 +38,37 @@ struct SettingsView: View {
                     Spacer()
                     Button("Change Icon…") {}
                         .disabled(true)
+                }
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Updates")
+                    .font(.system(size: 13, weight: .semibold))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(updateStatusText)
+                        .font(.system(size: 12, weight: .semibold))
+                    if let lastCheckedText {
+                        Text(lastCheckedText)
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                    }
+                    if let errorText {
+                        Text(errorText)
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                    }
+                }
+
+                HStack {
+                    Spacer()
+                    Button("Update…") {
+                        updater.userInitiatedUpdate()
+                    }
+                    .disabled(!updater.isEnabled)
                 }
             }
 
@@ -82,4 +114,32 @@ struct SettingsView: View {
     private var folderPathText: String {
         viewModel.selectedFolderURL?.path ?? "Choose a folder to show in the menu bar."
     }
+
+    private var updateStatusText: String {
+        guard updater.isEnabled else { return "Updates unavailable" }
+        if updater.isUpdateAvailable, let availableVersionString = updater.availableVersionString {
+            return "Update available: \(availableVersionString)"
+        }
+        if updater.isUpdateAvailable {
+            return "Update available"
+        }
+        return "Up to date"
+    }
+
+    private var lastCheckedText: String? {
+        guard updater.isEnabled, let lastCheckedAt = updater.lastCheckedAt else { return nil }
+        return "Last checked: \(Self.lastCheckedFormatter.string(from: lastCheckedAt))"
+    }
+
+    private var errorText: String? {
+        guard updater.isEnabled, let lastError = updater.lastError, !lastError.isEmpty else { return nil }
+        return "Last error: \(lastError)"
+    }
+
+    private static let lastCheckedFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter
+    }()
 }

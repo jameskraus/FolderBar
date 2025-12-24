@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 
 struct FolderPanelView: View {
     @ObservedObject var viewModel: FolderSelectionViewModel
+    @ObservedObject var updater: FolderBarUpdater
     let onOpenSettings: () -> Void
 
     var body: some View {
@@ -15,11 +16,13 @@ struct FolderPanelView: View {
                     items: viewModel.items,
                     scrollToken: viewModel.scrollToken,
                     now: viewModel.now,
+                    updater: updater,
                     onOpenSettings: onOpenSettings
                 )
             } else {
                 EmptyStateView(
                     onChooseFolder: viewModel.chooseFolderFromPopover,
+                    updater: updater,
                     onOpenSettings: onOpenSettings
                 )
             }
@@ -33,6 +36,7 @@ struct FolderPanelView: View {
 
 private struct EmptyStateView: View {
     let onChooseFolder: () -> Void
+    @ObservedObject var updater: FolderBarUpdater
     let onOpenSettings: () -> Void
 
     var body: some View {
@@ -49,7 +53,7 @@ private struct EmptyStateView: View {
             Button("Choose Folder", action: onChooseFolder)
                 .buttonStyle(DefaultButtonStyle())
             Spacer(minLength: 0)
-            FooterMenuBar(onOpenSettings: onOpenSettings)
+            FooterMenuBar(updater: updater, onOpenSettings: onOpenSettings)
         }
         .padding(.horizontal, PanelLayout.headerHorizontalPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -61,6 +65,7 @@ private struct SelectedFolderView: View {
     let items: [FolderChildItem]
     let scrollToken: UUID
     let now: Date
+    @ObservedObject var updater: FolderBarUpdater
     let onOpenSettings: () -> Void
 
     var body: some View {
@@ -110,7 +115,7 @@ private struct SelectedFolderView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: PanelLayout.listContainerHeight)
             }
-            FooterMenuBar(onOpenSettings: onOpenSettings)
+            FooterMenuBar(updater: updater, onOpenSettings: onOpenSettings)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
@@ -121,10 +126,18 @@ private struct SelectedFolderView: View {
 }
 
 private struct FooterMenuBar: View {
+    @ObservedObject var updater: FolderBarUpdater
     let onOpenSettings: () -> Void
 
     var body: some View {
         HStack {
+            if updater.isUpdateAvailable {
+                Button(action: onOpenSettings) {
+                    Label("Update available", systemImage: "arrow.down.circle.fill")
+                        .font(.system(size: 12, weight: .semibold))
+                }
+                .buttonStyle(.plain)
+            }
             Spacer()
             Menu {
                 Button("Settings…", action: onOpenSettings)

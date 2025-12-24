@@ -11,12 +11,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let folderSelectionViewModel = FolderSelectionViewModel()
     private let updater = FolderBarUpdater()
     private var updateProbeTimer: Timer?
-    private lazy var settingsWindowController = SettingsWindowController(viewModel: folderSelectionViewModel)
+    private lazy var settingsWindowController = SettingsWindowController(viewModel: folderSelectionViewModel, updater: updater)
     private lazy var panelController = MenuBarPanelController(
         statusItem: statusItem,
         rootView: AnyView(
             FolderPanelView(
                 viewModel: folderSelectionViewModel,
+                updater: updater,
                 onOpenSettings: { [weak self] in
                     self?.folderSelectionViewModel.requestClosePopover?()
                     self?.settingsWindowController.show()

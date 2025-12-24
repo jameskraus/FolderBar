@@ -4,6 +4,7 @@ import SwiftUI
 @MainActor
 final class SettingsWindowController {
     private let viewModel: FolderSelectionViewModel
+    private let updater: FolderBarUpdater
     private lazy var window: NSWindow = {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 360, height: 320),
@@ -13,6 +14,7 @@ final class SettingsWindowController {
         )
         let view = SettingsView(
             viewModel: viewModel,
+            updater: updater,
             appVersion: appVersion,
             onChooseFolder: { [weak self] in
                 guard let self else { return }
@@ -31,8 +33,9 @@ final class SettingsWindowController {
         return window
     }()
 
-    init(viewModel: FolderSelectionViewModel) {
+    init(viewModel: FolderSelectionViewModel, updater: FolderBarUpdater) {
         self.viewModel = viewModel
+        self.updater = updater
     }
 
     func show() {
