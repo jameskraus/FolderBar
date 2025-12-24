@@ -30,6 +30,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             button.action = #selector(togglePanel(_:))
         }
 
+        folderSelectionViewModel.requestClosePopover = { [weak self] in
+            self?.panelController.close()
+        }
+        folderSelectionViewModel.requestReopenPopover = { [weak self] in
+            self?.panelController.show()
+        }
         NSApp.setActivationPolicy(.accessory)
     }
 

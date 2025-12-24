@@ -18,6 +18,9 @@ final class FolderSelectionViewModel: ObservableObject {
     private var watcher: DirectoryWatcher?
     private var refreshTimer: Timer?
 
+    var requestClosePopover: (() -> Void)?
+    var requestReopenPopover: (() -> Void)?
+
     init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
         if let path = userDefaults.string(forKey: selectedFolderKey) {
@@ -29,18 +32,25 @@ final class FolderSelectionViewModel: ObservableObject {
     }
 
     func chooseFolder() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = false
-        panel.canCreateDirectories = false
-        panel.title = "Choose a Folder"
-        panel.prompt = "Choose"
-
-        panel.begin { [weak self] response in
+        requestClosePopover?()
+        DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            guard response == .OK, let url = panel.url else { return }
-            updateSelectedFolder(url)
+            let panel = NSOpenPanel()
+            panel.canChooseDirectories = true
+            panel.canChooseFiles = false
+            panel.allowsMultipleSelection = false
+            panel.canCreateDirectories = false
+            panel.title = "Choose a Folder"
+            panel.prompt = "Choose"
+
+            NSApp.activate(ignoringOtherApps: true)
+            panel.begin { [weak self] response in
+                guard let self else { return }
+                if response == .OK, let url = panel.url {
+                    updateSelectedFolder(url)
+                }
+                requestReopenPopover?()
+            }
         }
     }
 

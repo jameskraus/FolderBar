@@ -48,6 +48,7 @@ final class MenuBarPanelController: NSObject {
         panel.standardWindowButton(.closeButton)?.isHidden = true
         panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
         panel.standardWindowButton(.zoomButton)?.isHidden = true
+        panel.becomesKeyOnlyIfNeeded = false
 
         panel.backgroundColor = NSColor.windowBackgroundColor
         panel.isOpaque = true
@@ -80,8 +81,8 @@ final class MenuBarPanelController: NSObject {
         positionPanel(relativeTo: button)
 
         button.state = .on
-        panel.orderFrontRegardless()
         NSApp.activate(ignoringOtherApps: true)
+        panel.makeKeyAndOrderFront(nil)
         onShow?()
         installMonitors()
     }
@@ -146,6 +147,8 @@ final class MenuBarPanelController: NSObject {
 
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { [weak self] event in
             guard let self else { return event }
+            if NSApp.modalWindow != nil { return event }
+            if NSApp.keyWindow !== panel { return event }
             if event.keyCode == 53 {
                 close()
                 return nil
@@ -168,5 +171,5 @@ final class MenuBarPanelController: NSObject {
 
 final class MenuBarPanel: NSPanel {
     override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { false }
+    override var canBecomeMain: Bool { true }
 }
