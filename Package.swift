@@ -18,13 +18,19 @@ let package = Package(
             targets: ["FolderBar"]
         )
     ],
+    dependencies: [
+        .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.8.1")
+    ],
     targets: [
         .target(
             name: "FolderBarCore"
         ),
         .executableTarget(
             name: "FolderBar",
-            dependencies: ["FolderBarCore"]
+            dependencies: [
+                "FolderBarCore",
+                .product(name: "Sparkle", package: "Sparkle")
+            ]
         ),
         .testTarget(
             name: "FolderBarTests",

@@ -47,6 +47,8 @@ if [[ -f "$VERSION_FILE" ]]; then
 fi
 
 VERSION="${VERSION:-0.1.0}"
+SPARKLE_FEED_URL="${SPARKLE_FEED_URL:-}"
+SPARKLE_PUBLIC_ED_KEY="${SPARKLE_PUBLIC_ED_KEY:-}"
 
 swift build -c "$CONFIG"
 BIN_DIR="$(swift build -c "$CONFIG" --show-bin-path)"
@@ -61,12 +63,24 @@ APP_DIR="$OUTPUT_DIR/$APP_NAME.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
+FRAMEWORKS_DIR="$CONTENTS_DIR/Frameworks"
 ICONSET_DIR="$OUTPUT_DIR/$ICON_NAME.iconset"
 ICON_OUTPUT="$RESOURCES_DIR/$ICON_NAME.icns"
 
 rm -rf "$APP_DIR"
-mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
+mkdir -p "$MACOS_DIR" "$RESOURCES_DIR" "$FRAMEWORKS_DIR"
 cp "$EXECUTABLE" "$MACOS_DIR/$APP_NAME"
+
+SPARKLE_FRAMEWORK_SOURCE="$BIN_DIR/Sparkle.framework"
+SPARKLE_FRAMEWORK_DEST="$FRAMEWORKS_DIR/Sparkle.framework"
+
+if [[ -d "$SPARKLE_FRAMEWORK_SOURCE" ]]; then
+  ditto "$SPARKLE_FRAMEWORK_SOURCE" "$SPARKLE_FRAMEWORK_DEST"
+
+  if ! otool -l "$MACOS_DIR/$APP_NAME" | grep -q "@executable_path/../Frameworks"; then
+    install_name_tool -add_rpath "@executable_path/../Frameworks" "$MACOS_DIR/$APP_NAME"
+  fi
+fi
 
 if [[ ! -f "$ICON_SOURCE_PNG" ]]; then
   echo "Icon source image not found: $ICON_SOURCE_PNG" >&2
@@ -116,9 +130,46 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
   <true/>
   <key>NSHighResolutionCapable</key>
   <true/>
+  <key>SUEnableAutomaticChecks</key>
+  <false/>
+  <key>SUFeedURL</key>
+  <string>$SPARKLE_FEED_URL</string>
+  <key>SUPublicEDKey</key>
+  <string>$SPARKLE_PUBLIC_ED_KEY</string>
 </dict>
 </plist>
 PLIST
+
+sign_path() {
+  local path="$1"
+  /usr/bin/codesign "${SIGNING_ARGS[@]}" "$path"
+}
+
+sign_sparkle_framework() {
+  local sparkle="$1"
+  if [[ ! -d "$sparkle" ]]; then
+    return 0
+  fi
+
+  while IFS= read -r -d '' container; do
+    local macos_dir="$container/Contents/MacOS"
+    if [[ -d "$macos_dir" ]]; then
+      while IFS= read -r -d '' executable; do
+        sign_path "$executable"
+      done < <(find "$macos_dir" -type f -perm -111 -print0)
+    fi
+  done < <(find "$sparkle" -type d \( -name "*.xpc" -o -name "*.app" \) -print0)
+
+  while IFS= read -r -d '' container; do
+    sign_path "$container"
+  done < <(find "$sparkle" -type d \( -name "*.xpc" -o -name "*.app" \) -print0)
+
+  while IFS= read -r -d '' executable; do
+    sign_path "$executable"
+  done < <(find "$sparkle/Versions" -maxdepth 2 -type f -perm -111 -print0)
+
+  sign_path "$sparkle"
+}
 
 if [[ -n "$SIGNING_IDENTITY" ]]; then
   echo "Signing app with identity: $SIGNING_IDENTITY"
@@ -127,10 +178,13 @@ if [[ -n "$SIGNING_IDENTITY" ]]; then
     # shellcheck disable=SC2206
     SIGNING_ARGS+=($SIGNING_FLAGS)
   fi
-  /usr/bin/codesign "${SIGNING_ARGS[@]}" "$APP_DIR"
+  sign_sparkle_framework "$SPARKLE_FRAMEWORK_DEST"
+  sign_path "$APP_DIR"
 elif [[ "$SIGN_ADHOC" == "1" ]]; then
   echo "Ad-hoc signing app (set SIGNING_IDENTITY for Developer ID signing)"
-  /usr/bin/codesign --force --sign - "$APP_DIR"
+  SIGNING_ARGS=(--force --sign -)
+  sign_sparkle_framework "$SPARKLE_FRAMEWORK_DEST"
+  sign_path "$APP_DIR"
 else
   echo "Skipping code signing (set SIGNING_IDENTITY or SIGN_ADHOC=1 to sign)"
 fi
