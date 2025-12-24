@@ -8,9 +8,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let logger = Logger(subsystem: AppDelegate.subsystem, category: "Lifecycle")
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     private let folderSelectionViewModel = FolderSelectionViewModel()
+    private lazy var settingsWindowController = SettingsWindowController(viewModel: folderSelectionViewModel)
     private lazy var panelController = MenuBarPanelController(
         statusItem: statusItem,
-        rootView: AnyView(FolderPanelView(viewModel: folderSelectionViewModel)),
+        rootView: AnyView(
+            FolderPanelView(
+                viewModel: folderSelectionViewModel,
+                onOpenSettings: { [weak self] in
+                    self?.folderSelectionViewModel.requestClosePopover?()
+                    self?.settingsWindowController.show()
+                }
+            )
+        ),
         contentSize: PanelLayout.contentSize,
         onShow: { [weak folderSelectionViewModel] in
             folderSelectionViewModel?.panelDidOpen()

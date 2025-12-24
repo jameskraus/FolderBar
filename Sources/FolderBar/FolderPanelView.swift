@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 
 struct FolderPanelView: View {
     @ObservedObject var viewModel: FolderSelectionViewModel
+    let onOpenSettings: () -> Void
 
     var body: some View {
         Group {
@@ -14,10 +15,13 @@ struct FolderPanelView: View {
                     items: viewModel.items,
                     scrollToken: viewModel.scrollToken,
                     now: viewModel.now,
-                    onChangeFolder: viewModel.chooseFolder
+                    onOpenSettings: onOpenSettings
                 )
             } else {
-                EmptyStateView(onChooseFolder: viewModel.chooseFolder)
+                EmptyStateView(
+                    onChooseFolder: viewModel.chooseFolderFromPopover,
+                    onOpenSettings: onOpenSettings
+                )
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -29,6 +33,7 @@ struct FolderPanelView: View {
 
 private struct EmptyStateView: View {
     let onChooseFolder: () -> Void
+    let onOpenSettings: () -> Void
 
     var body: some View {
         VStack(spacing: 12) {
@@ -44,7 +49,7 @@ private struct EmptyStateView: View {
             Button("Choose Folder", action: onChooseFolder)
                 .buttonStyle(DefaultButtonStyle())
             Spacer(minLength: 0)
-            FooterMenuBar(onChangeFolder: onChooseFolder)
+            FooterMenuBar(onOpenSettings: onOpenSettings)
         }
         .padding(.horizontal, PanelLayout.headerHorizontalPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -56,7 +61,7 @@ private struct SelectedFolderView: View {
     let items: [FolderChildItem]
     let scrollToken: UUID
     let now: Date
-    let onChangeFolder: () -> Void
+    let onOpenSettings: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: PanelLayout.headerSpacing) {
@@ -105,7 +110,7 @@ private struct SelectedFolderView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: PanelLayout.listContainerHeight)
             }
-            FooterMenuBar(onChangeFolder: onChangeFolder)
+            FooterMenuBar(onOpenSettings: onOpenSettings)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
@@ -116,15 +121,13 @@ private struct SelectedFolderView: View {
 }
 
 private struct FooterMenuBar: View {
-    let onChangeFolder: () -> Void
+    let onOpenSettings: () -> Void
 
     var body: some View {
         HStack {
             Spacer()
             Menu {
-                Button("Change Folder", action: onChangeFolder)
-                Button("Change Icon (coming soon)") {}
-                    .disabled(true)
+                Button("Settings…", action: onOpenSettings)
                 Divider()
                 Button("Quit") {
                     NSApplication.shared.terminate(nil)

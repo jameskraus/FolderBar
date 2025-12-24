@@ -31,25 +31,30 @@ final class FolderSelectionViewModel: ObservableObject {
         }
     }
 
-    func chooseFolder() {
+    func chooseFolderFromPopover() {
         requestClosePopover?()
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            let panel = NSOpenPanel()
-            panel.canChooseDirectories = true
-            panel.canChooseFiles = false
-            panel.allowsMultipleSelection = false
-            panel.canCreateDirectories = false
-            panel.title = "Choose a Folder"
-            panel.prompt = "Choose"
-
             NSApp.activate(ignoringOtherApps: true)
-            panel.begin { [weak self] response in
+            presentOpenPanel(presentingWindow: nil) { [weak self] response, url in
                 guard let self else { return }
-                if response == .OK, let url = panel.url {
+                if response == .OK, let url {
                     updateSelectedFolder(url)
                 }
                 requestReopenPopover?()
+            }
+        }
+    }
+
+    func chooseFolderFromSettings(presentingWindow: NSWindow?) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            NSApp.activate(ignoringOtherApps: true)
+            presentOpenPanel(presentingWindow: presentingWindow) { [weak self] response, url in
+                guard let self else { return }
+                if response == .OK, let url {
+                    updateSelectedFolder(url)
+                }
             }
         }
     }
@@ -85,6 +90,17 @@ final class FolderSelectionViewModel: ObservableObject {
         stopRelativeTimeTimer()
     }
 
+    func resetAllSettings() {
+        stopWatching()
+        selectedFolderURL = nil
+        items = []
+        if let bundleID = Bundle.main.bundleIdentifier {
+            userDefaults.removePersistentDomain(forName: bundleID)
+        } else {
+            userDefaults.removeObject(forKey: selectedFolderKey)
+        }
+    }
+
     private func startRelativeTimeTimer() {
         refreshTimer?.invalidate()
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
@@ -109,6 +125,29 @@ final class FolderSelectionViewModel: ObservableObject {
         items = []
         startWatching(url)
         refreshItems()
+    }
+
+    private func presentOpenPanel(
+        presentingWindow: NSWindow?,
+        completion: @escaping (NSApplication.ModalResponse, URL?) -> Void
+    ) {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = false
+        panel.title = "Choose a Folder"
+        panel.prompt = "Choose"
+
+        if let presentingWindow {
+            panel.beginSheetModal(for: presentingWindow) { response in
+                completion(response, panel.url)
+            }
+        } else {
+            panel.begin { response in
+                completion(response, panel.url)
+            }
+        }
     }
 
     private func clearSelection() {
