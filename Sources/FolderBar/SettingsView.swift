@@ -23,7 +23,7 @@ struct SettingsView: View {
                             .lineLimit(2)
                     }
                     Spacer()
-                    Button(viewModel.isFolderPickerPresented ? "Show…" : "Change…", action: onChooseFolder)
+                    Button("Change…", action: onChooseFolder)
                 }
             }
 
