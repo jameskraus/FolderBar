@@ -9,7 +9,10 @@ DerivedData/
 .netrc
 .env
 .env.local
-# plans/
+
+# Local agent plans (keep the shared DEVELOPMENT_PLAN.md tracked)
+plans/*
+!plans/DEVELOPMENT_PLAN.md
 
 # bv (beads viewer) local config and caches
 .bv/
