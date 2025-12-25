@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="FolderBar"
 OUTPUT_DIR="${OUTPUT_DIR:-$ROOT_DIR/build}"
 APP_DIR="${APP_DIR:-$OUTPUT_DIR/$APP_NAME.app}"
+DMG_VOLUME_NAME="${DMG_VOLUME_NAME:-$APP_NAME Installer}"
 VERSION_FILE="$ROOT_DIR/version.env"
 ENV_FILES=("$ROOT_DIR/.env" "$ROOT_DIR/.env.local")
 
@@ -39,6 +40,6 @@ ditto "$APP_DIR" "$STAGING_DIR/$APP_NAME.app"
 ln -s /Applications "$STAGING_DIR/Applications"
 
 rm -f "$DMG_PATH"
-/usr/bin/hdiutil create -volname "$APP_NAME" -srcfolder "$STAGING_DIR" -ov -format UDZO "$DMG_PATH" >/dev/null
+/usr/bin/hdiutil create -volname "$DMG_VOLUME_NAME" -srcfolder "$STAGING_DIR" -ov -format UDZO "$DMG_PATH" >/dev/null
 
 echo "DMG artifact: $DMG_PATH"
