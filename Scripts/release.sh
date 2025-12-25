@@ -77,12 +77,7 @@ if [[ "$(git -C "$ROOT_DIR" rev-parse HEAD)" != "$(git -C "$ROOT_DIR" rev-parse 
 fi
 
 if [[ "$SKIP_PUBLISH" != "1" ]]; then
-  if [[ -z "$SPARKLE_ED_PRIVATE_KEY_FILE" ]]; then
-    echo "SPARKLE_ED_PRIVATE_KEY_FILE is not set (required to sign Sparkle update payload)" >&2
-    exit 1
-  fi
-
-  if [[ ! -f "$SPARKLE_ED_PRIVATE_KEY_FILE" ]]; then
+  if [[ -n "$SPARKLE_ED_PRIVATE_KEY_FILE" && ! -f "$SPARKLE_ED_PRIVATE_KEY_FILE" ]]; then
     echo "SPARKLE_ED_PRIVATE_KEY_FILE not found: $SPARKLE_ED_PRIVATE_KEY_FILE" >&2
     exit 1
   fi
@@ -92,6 +87,15 @@ if [[ "$SKIP_PUBLISH" != "1" ]]; then
       SIGN_UPDATE_BIN="$(command -v sign_update)"
     elif [[ -x "/Applications/Sparkle.app/Contents/Resources/bin/sign_update" ]]; then
       SIGN_UPDATE_BIN="/Applications/Sparkle.app/Contents/Resources/bin/sign_update"
+    elif [[ -x "/opt/homebrew/Caskroom/sparkle/2.8.1/bin/sign_update" ]]; then
+      SIGN_UPDATE_BIN="/opt/homebrew/Caskroom/sparkle/2.8.1/bin/sign_update"
+    else
+      for candidate in /opt/homebrew/Caskroom/sparkle/*/bin/sign_update; do
+        if [[ -x "$candidate" ]]; then
+          SIGN_UPDATE_BIN="$candidate"
+          break
+        fi
+      done
     fi
   fi
 
@@ -187,7 +191,12 @@ else
   gh release create "$TAG" "$FINAL_ZIP" "$FINAL_DMG" --title "$RELEASE_TITLE" "${notes_args[@]}"
 fi
 
-sig_raw="$("$SIGN_UPDATE_BIN" --ed-key-file "$SPARKLE_ED_PRIVATE_KEY_FILE" "$FINAL_ZIP")"
+sign_update_args=()
+if [[ -n "$SPARKLE_ED_PRIVATE_KEY_FILE" ]]; then
+  sign_update_args=(--ed-key-file "$SPARKLE_ED_PRIVATE_KEY_FILE")
+fi
+
+sig_raw="$("$SIGN_UPDATE_BIN" "${sign_update_args[@]}" "$FINAL_ZIP")"
 signature="$(echo "$sig_raw" | sed -n 's/.*sparkle:edSignature=\"\\([^\"]*\\)\".*/\\1/p')"
 if [[ -z "$signature" ]]; then
   signature="$(echo "$sig_raw" | tr -d '\n' | xargs)"
