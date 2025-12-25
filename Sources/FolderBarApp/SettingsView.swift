@@ -272,8 +272,7 @@ private struct SettingsHeaderView: View {
     private static var settingsHeaderIconImage: NSImage {
 #if DEBUG
         if let url = Bundle.main.url(forResource: "SettingsHeaderIcon-Debug", withExtension: "png"),
-           let image = NSImage(contentsOf: url)
-        {
+           let image = NSImage(contentsOf: url) {
             return image
         }
 #endif
