@@ -62,6 +62,12 @@ make format
 make lint
 ```
 
+## Git Hooks (recommended)
+
+```bash
+./Scripts/install_git_hooks.sh
+```
+
 ## Package (macOS app bundle)
 
 ```bash

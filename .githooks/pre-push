@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+# Keep bd (beads) safety behavior: prevent pushing stale JSONL.
+if [[ -d .beads ]]; then
+  if [[ -n "${BD_SYNC_IN_PROGRESS:-}" ]]; then
+    exit 0
+  fi
+
+  sync_branch="${BEADS_SYNC_BRANCH:-}"
+  if [[ -z "$sync_branch" && -f .beads/config.yaml ]]; then
+    sync_branch="$(grep -E '^sync-branch:' .beads/config.yaml 2>/dev/null | head -1 | sed 's/^sync-branch:[[:space:]]*//' | sed 's/^["'"'"']//' | sed 's/["'"'"']$//' || true)"
+  fi
+
+  if [[ -z "$sync_branch" ]]; then
+    if command -v bd >/dev/null 2>&1; then
+      bd sync --flush-only >/dev/null 2>&1 || true
+    fi
+
+    beads_files=()
+    for f in .beads/beads.jsonl .beads/issues.jsonl .beads/deletions.jsonl; do
+      if git ls-files --error-unmatch "$f" >/dev/null 2>&1 || [[ -f "$f" ]]; then
+        beads_files+=("$f")
+      fi
+    done
+
+    if [[ "${#beads_files[@]}" -gt 0 ]]; then
+      if [[ -n "$(git status --porcelain -- "${beads_files[@]}" 2>/dev/null)" ]]; then
+        echo "❌ Error: Uncommitted .beads changes detected. Run 'bd sync' before pushing." >&2
+        exit 1
+      fi
+    fi
+  fi
+fi
+
+if [[ "${SKIP_SWIFTLINT:-}" == "1" || "${FOLDERBAR_SKIP_LINT:-}" == "1" ]]; then
+  exit 0
+fi
+
+if ! command -v swiftlint >/dev/null 2>&1; then
+  echo "SwiftLint is required for pre-push linting but was not found on PATH." >&2
+  echo "Install: brew install swiftlint" >&2
+  echo "Skip once: SKIP_SWIFTLINT=1 git push (or git push --no-verify)" >&2
+  exit 1
+fi
+
+EMPTY_TREE="$(git hash-object -t tree /dev/null)"
+
+tmpfile="$(mktemp)"
+trap 'rm -f "$tmpfile"' EXIT
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [[ -z "${local_sha}" ]]; then
+    continue
+  fi
+
+  base_sha="$remote_sha"
+  if [[ "${remote_sha}" =~ ^0+$ ]]; then
+    base_sha="$EMPTY_TREE"
+  fi
+
+  git diff --name-only "$base_sha" "$local_sha" -- '*.swift' >>"$tmpfile" || true
+done
+
+if [[ ! -s "$tmpfile" ]]; then
+  exit 0
+fi
+
+count="$(sort -u "$tmpfile" | wc -l | tr -d ' ')"
+if [[ "$count" -gt 200 ]]; then
+  swiftlint lint --strict --config "$ROOT/.swiftlint.yml" --quiet --working-directory "$ROOT"
+  exit $?
+fi
+
+export SCRIPT_INPUT_FILE_COUNT="$count"
+idx=0
+while IFS= read -r path; do
+  [[ -z "$path" ]] && continue
+  export "SCRIPT_INPUT_FILE_${idx}=${ROOT}/${path}"
+  idx=$((idx + 1))
+done < <(sort -u "$tmpfile")
+
+swiftlint lint \
+  --strict \
+  --config "$ROOT/.swiftlint.yml" \
+  --quiet \
+  --force-exclude \
+  --use-script-input-files \
+  --working-directory "$ROOT"

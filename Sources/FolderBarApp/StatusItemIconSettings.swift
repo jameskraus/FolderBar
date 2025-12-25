@@ -34,4 +34,3 @@ final class StatusItemIconSettings: ObservableObject {
         symbolName = Self.defaultSymbolName
     }
 }
-

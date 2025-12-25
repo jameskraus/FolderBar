@@ -12,7 +12,6 @@ public enum FolderBarApplication {
         app.run()
     }
 }
-
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private static let subsystem = Bundle.main.bundleIdentifier ?? "FolderBar"
@@ -117,4 +116,3 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         updater.probeForUpdates()
     }
 }
-

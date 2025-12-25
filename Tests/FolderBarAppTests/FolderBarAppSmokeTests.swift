@@ -6,4 +6,3 @@ final class FolderBarAppSmokeTests: XCTestCase {
         XCTAssertTrue(true)
     }
 }
-

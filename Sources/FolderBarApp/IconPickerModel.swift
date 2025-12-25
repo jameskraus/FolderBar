@@ -102,10 +102,8 @@ final class IconPickerModel: ObservableObject {
     nonisolated private static func filteredSymbols(filter: String, symbols: [String], lowered: [String]) -> [String] {
         var results: [String] = []
         results.reserveCapacity(512)
-        for (name, loweredName) in zip(symbols, lowered) {
-            if loweredName.contains(filter) {
-                results.append(name)
-            }
+        for (name, loweredName) in zip(symbols, lowered) where loweredName.contains(filter) {
+            results.append(name)
         }
         return results
     }
