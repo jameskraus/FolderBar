@@ -6,7 +6,10 @@ struct IconPickerView: View {
     @Environment(\.presentationMode) private var presentationMode
     @State private var filterText = ""
     @State private var symbolNames: [String] = []
+    @State private var symbolNamesLowercased: [String] = []
+    @State private var displayedSymbolNames: [String] = []
     @State private var isLoading = true
+    @State private var pendingFilterWorkItem: DispatchWorkItem?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -24,11 +27,17 @@ struct IconPickerView: View {
             isLoading = true
             DispatchQueue.global(qos: .userInitiated).async {
                 let loaded = SFSymbolCatalog.loadSymbolNames()
+                let lowered = loaded.map { $0.lowercased() }
                 DispatchQueue.main.async {
                     symbolNames = loaded
+                    symbolNamesLowercased = lowered
+                    displayedSymbolNames = loaded
                     isLoading = false
                 }
             }
+        }
+        .onChange(of: filterText) { _ in
+            scheduleFilterUpdate()
         }
     }
 
@@ -69,7 +78,7 @@ struct IconPickerView: View {
                     ProgressView()
                         .controlSize(.small)
                 } else {
-                    Text("\(filteredSymbols.count) icons")
+                    Text("\(displayedSymbolNames.count) icons")
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                 }
@@ -78,29 +87,70 @@ struct IconPickerView: View {
             .padding(.top, 14)
 
             ScrollView {
-                LazyVGrid(columns: Self.columns, spacing: 10) {
-                    ForEach(filteredSymbols, id: \.self) { symbolName in
-                        IconCell(
-                            symbolName: symbolName,
-                            isSelected: symbolName == iconSettings.resolvedSymbolName
-                        ) {
-                            iconSettings.symbolName = symbolName
+                if isLoading {
+                    EmptyView()
+                } else if displayedSymbolNames.isEmpty {
+                    Text(symbolNames.isEmpty ? "No symbols available." : "No results.")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(40)
+                } else {
+                    LazyVGrid(columns: Self.columns, spacing: 10) {
+                        ForEach(displayedSymbolNames, id: \.self) { symbolName in
+                            IconCell(
+                                symbolName: symbolName,
+                                isSelected: symbolName == iconSettings.resolvedSymbolName
+                            ) {
+                                iconSettings.symbolName = symbolName
+                            }
                         }
                     }
+                    .padding(20)
                 }
-                .padding(20)
             }
         }
     }
 
-    private var filteredSymbols: [String] {
-        let trimmed = filterText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return symbolNames }
-        return symbolNames.filter { $0.localizedCaseInsensitiveContains(trimmed) }
+    private func scheduleFilterUpdate() {
+        pendingFilterWorkItem?.cancel()
+
+        let filter = filterText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let currentSymbols = symbolNames
+        let currentLowered = symbolNamesLowercased
+
+        if filter.isEmpty {
+            displayedSymbolNames = currentSymbols
+            return
+        }
+
+        let workItem = DispatchWorkItem { [filter] in
+            var results: [String] = []
+            results.reserveCapacity(512)
+            for (name, lowered) in zip(currentSymbols, currentLowered) {
+                if lowered.contains(filter) {
+                    results.append(name)
+                }
+            }
+            DispatchQueue.main.async {
+                displayedSymbolNames = results
+            }
+        }
+
+        pendingFilterWorkItem = workItem
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 0.15, execute: workItem)
     }
 
     private static let columns: [GridItem] = [
-        GridItem(.adaptive(minimum: 44, maximum: 56), spacing: 10, alignment: .center)
+        GridItem(.fixed(44), spacing: 10, alignment: .center),
+        GridItem(.fixed(44), spacing: 10, alignment: .center),
+        GridItem(.fixed(44), spacing: 10, alignment: .center),
+        GridItem(.fixed(44), spacing: 10, alignment: .center),
+        GridItem(.fixed(44), spacing: 10, alignment: .center),
+        GridItem(.fixed(44), spacing: 10, alignment: .center),
+        GridItem(.fixed(44), spacing: 10, alignment: .center),
+        GridItem(.fixed(44), spacing: 10, alignment: .center),
+        GridItem(.fixed(44), spacing: 10, alignment: .center)
     ]
 }
 
@@ -122,6 +172,7 @@ private struct IconCell: View {
                 Image(systemName: symbolName)
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.primary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
@@ -133,6 +184,5 @@ private struct IconCell: View {
             .frame(width: 44, height: 44)
         }
         .buttonStyle(.plain)
-        .help(symbolName)
     }
 }
