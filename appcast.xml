@@ -11,7 +11,7 @@
       <sparkle:version>0.1.2</sparkle:version>
       <sparkle:shortVersionString>0.1.2</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>11.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/jameskraus/FolderBar/releases/download/v0.1.2/FolderBar-0.1.2.zip" length="3459309" type="application/octet-stream" sparkle:edSignature="sparkle:edSignature=YiUIPyNta/y6v84Gs/Tvkm9uUA33vRirxgacmuNLZBj70nr9UPPYyIZddD9KwZX32LANnw1UXM74T0IhufAfDQ== length=3459309" />
+      <enclosure url="https://github.com/jameskraus/FolderBar/releases/download/v0.1.2/FolderBar-0.1.2.zip" length="3459309" type="application/octet-stream" sparkle:edSignature="YiUIPyNta/y6v84Gs/Tvkm9uUA33vRirxgacmuNLZBj70nr9UPPYyIZddD9KwZX32LANnw1UXM74T0IhufAfDQ==" />
       </item>
     <item>
       <title>0.1.1</title>
@@ -19,7 +19,7 @@
       <sparkle:version>0.1.1</sparkle:version>
       <sparkle:shortVersionString>0.1.1</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>11.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/jameskraus/FolderBar/releases/download/v0.1.1/FolderBar-0.1.1.zip" length="3459317" type="application/octet-stream" sparkle:edSignature="sparkle:edSignature=mO7i2gCQYRaixSFD5BVpKLn3fWQzUNINy2YEixAUwSx6fFcICoqP0hJuIufUsV13iu/B54K9zAQlkRBwoOSUBQ== length=3459317" />
+      <enclosure url="https://github.com/jameskraus/FolderBar/releases/download/v0.1.1/FolderBar-0.1.1.zip" length="3459317" type="application/octet-stream" sparkle:edSignature="mO7i2gCQYRaixSFD5BVpKLn3fWQzUNINy2YEixAUwSx6fFcICoqP0hJuIufUsV13iu/B54K9zAQlkRBwoOSUBQ==" />
       </item>
     </channel>
   </rss>

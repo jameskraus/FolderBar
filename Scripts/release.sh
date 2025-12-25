@@ -196,15 +196,9 @@ if [[ -n "$SPARKLE_ED_PRIVATE_KEY_FILE" ]]; then
   sign_update_args=(--ed-key-file "$SPARKLE_ED_PRIVATE_KEY_FILE")
 fi
 
-sig_raw="$("$SIGN_UPDATE_BIN" "${sign_update_args[@]}" "$FINAL_ZIP")"
-signature="$(echo "$sig_raw" | sed -n 's/.*sparkle:edSignature=\"\\([^\"]*\\)\".*/\\1/p')"
+signature="$("$SIGN_UPDATE_BIN" -p "${sign_update_args[@]}" "$FINAL_ZIP" | tr -d '\n' | xargs)"
 if [[ -z "$signature" ]]; then
-  signature="$(echo "$sig_raw" | tr -d '\n' | xargs)"
-fi
-
-if [[ -z "$signature" ]]; then
-  echo "Failed to extract signature from sign_update output:" >&2
-  echo "$sig_raw" >&2
+  echo "Failed to generate Sparkle signature (sign_update returned empty output)" >&2
   exit 1
 fi
 
