@@ -4,6 +4,7 @@ struct SettingsView: View {
     @ObservedObject var viewModel: FolderSelectionViewModel
     @ObservedObject var updater: FolderBarUpdater
     let appVersion: String
+    let appSigningSummary: String
     let onChooseFolder: () -> Void
     let onResetAll: () -> Void
 
@@ -95,6 +96,10 @@ struct SettingsView: View {
                 Text("FolderBar Version \(appVersion)")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
+                Text(appSigningSummary)
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
             }
 
             Spacer()
