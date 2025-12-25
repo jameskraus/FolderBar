@@ -13,11 +13,8 @@ struct SettingsView: View {
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    GroupBox(
-                        label: Text("Downloads")
-                            .font(.system(size: 13, weight: .semibold))
-                    ) {
+                VStack(alignment: .leading, spacing: 0) {
+                    SettingsSection(title: "Selected Folder") {
                         HStack(alignment: .firstTextBaseline, spacing: 16) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(folderDisplayName)
@@ -30,14 +27,12 @@ struct SettingsView: View {
                             Spacer(minLength: 12)
                             Button("Change…", action: onChooseFolder)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 2)
                     }
 
-                    GroupBox(
-                        label: Text("App Icon")
-                            .font(.system(size: 13, weight: .semibold))
-                    ) {
+                    Divider()
+                        .padding(.vertical, 16)
+
+                    SettingsSection(title: "App Icon") {
                         HStack(alignment: .firstTextBaseline, spacing: 16) {
                             Text("Default icon")
                                 .font(.system(size: 12))
@@ -46,15 +41,13 @@ struct SettingsView: View {
                             Button("Change Icon…") {}
                                 .disabled(true)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 2)
                     }
 
-                    GroupBox(
-                        label: Text("Updates")
-                            .font(.system(size: 13, weight: .semibold))
-                    ) {
-                        VStack(alignment: .leading, spacing: 10) {
+                    Divider()
+                        .padding(.vertical, 16)
+
+                    SettingsSection(title: "Updates") {
+                        VStack(alignment: .leading, spacing: 12) {
                             HStack(alignment: .firstTextBaseline, spacing: 16) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(updateStatusText)
@@ -84,7 +77,7 @@ struct SettingsView: View {
                                     Button("Open Privacy & Security…") {
                                         updater.openPrivacyAndSecuritySettings()
                                     }
-                                    .buttonStyle(.plain)
+                                    .controlSize(.small)
                                 }
                             }
 
@@ -95,13 +88,12 @@ struct SettingsView: View {
                                     .lineLimit(3)
                             }
                         }
-                        .padding(.top, 2)
                     }
 
-                    GroupBox(
-                        label: Text("About")
-                            .font(.system(size: 13, weight: .semibold))
-                    ) {
+                    Divider()
+                        .padding(.vertical, 16)
+
+                    SettingsSection(title: "About") {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("FolderBar Version \(appVersion)")
                                 .font(.system(size: 12))
@@ -113,11 +105,10 @@ struct SettingsView: View {
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 2)
                     }
                 }
-                .padding(20)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 22)
             }
 
             Divider()
@@ -135,7 +126,8 @@ struct SettingsView: View {
                 Spacer()
             }
             .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 22)
         }
         .frame(minWidth: 460, minHeight: 420)
         .alert(isPresented: $showingResetAlert) {
@@ -183,4 +175,18 @@ struct SettingsView: View {
         formatter.timeStyle = .short
         return formatter
     }()
+}
+
+private struct SettingsSection<Content: View>: View {
+    let title: String
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.system(size: 13, weight: .semibold))
+            content
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 }

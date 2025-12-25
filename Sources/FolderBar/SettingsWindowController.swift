@@ -8,7 +8,7 @@ final class SettingsWindowController {
     private let appSigningSummary: String?
     private lazy var window: NSWindow = {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 480, height: 460),
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 480),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
@@ -27,7 +27,7 @@ final class SettingsWindowController {
             }
         )
         let hostingController = NSHostingController(rootView: view)
-        window.minSize = NSSize(width: 460, height: 420)
+        window.minSize = NSSize(width: 480, height: 440)
         window.center()
         window.title = "Settings"
         window.contentViewController = hostingController
