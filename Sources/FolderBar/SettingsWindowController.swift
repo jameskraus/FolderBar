@@ -30,7 +30,7 @@ final class SettingsWindowController {
             }
         )
         let hostingController = NSHostingController(rootView: view)
-        window.minSize = NSSize(width: 500, height: 520)
+        window.minSize = NSSize(width: 500, height: 480)
         window.center()
         window.title = "Settings"
         window.contentViewController = hostingController

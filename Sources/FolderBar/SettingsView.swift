@@ -10,6 +10,7 @@ struct SettingsView: View {
     let onResetAll: () -> Void
 
     @State private var showingResetAlert = false
+    @State private var showingIconPicker = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -34,74 +35,34 @@ struct SettingsView: View {
                         .padding(.vertical, 16)
 
                     SettingsSection(title: "Menu Bar Icon") {
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack(alignment: .center, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack(alignment: .firstTextBaseline, spacing: 12) {
                                 Image(systemName: iconSettings.resolvedSymbolName)
                                     .font(.system(size: 16, weight: .semibold))
                                     .frame(width: 22, alignment: .center)
                                     .foregroundColor(.secondary)
 
-                                Text("Choose an icon:")
+                                Text(iconSettings.resolvedSymbolName)
                                     .font(.system(size: 12))
                                     .foregroundColor(.secondary)
 
-                                Spacer()
+                                Spacer(minLength: 12)
 
-                                Button("Reset to Default") { iconSettings.resetToDefault() }
-                                    .controlSize(.small)
+                                Button("Choose…") {
+                                    showingIconPicker = true
+                                }
+
+                                Button("Reset") {
+                                    iconSettings.resetToDefault()
+                                }
+                                .controlSize(.small)
                             }
 
                             if !iconSettings.isValidSymbol {
-                                Text("Unknown icon was previously selected. Resetting to the default icon is recommended.")
+                                Text("Unknown icon was previously selected. Using the default icon.")
                                     .font(.system(size: 11))
                                     .foregroundColor(.secondary)
                             }
-
-                            LazyVGrid(
-                                columns: Self.iconGridColumns,
-                                alignment: .leading,
-                                spacing: 10
-                            ) {
-                                ForEach(Self.iconChoices) { choice in
-                                    Button {
-                                        iconSettings.symbolName = choice.symbolName
-                                    } label: {
-                                        VStack(spacing: 6) {
-                                            Image(systemName: choice.symbolName)
-                                                .font(.system(size: 18, weight: .semibold))
-                                                .frame(height: 22)
-                                            Text(choice.title)
-                                                .font(.system(size: 10))
-                                                .foregroundColor(.secondary)
-                                                .lineLimit(2)
-                                                .multilineTextAlignment(.center)
-                                                .frame(width: 72)
-                                        }
-                                        .padding(.vertical, 8)
-                                        .frame(width: 88)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                                .fill(
-                                                    choice.symbolName == iconSettings.resolvedSymbolName
-                                                        ? Color.accentColor.opacity(0.18)
-                                                        : Color(NSColor.controlBackgroundColor).opacity(0.35)
-                                                )
-                                        )
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                                .stroke(
-                                                    choice.symbolName == iconSettings.resolvedSymbolName
-                                                        ? Color.accentColor.opacity(0.55)
-                                                        : Color(NSColor.separatorColor).opacity(0.35),
-                                                    lineWidth: 1
-                                                )
-                                        )
-                                    }
-                                    .buttonStyle(.plain)
-                                    .help(choice.symbolName)
-                                }
-                            }
-                            .padding(.top, 2)
                         }
                     }
 
@@ -169,8 +130,8 @@ struct SettingsView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 22)
+                .padding(.horizontal, 26)
+                .padding(.vertical, 24)
             }
 
             Divider()
@@ -191,7 +152,7 @@ struct SettingsView: View {
             .padding(.top, 16)
             .padding(.bottom, 22)
         }
-        .frame(minWidth: 500, minHeight: 520)
+        .frame(minWidth: 500, minHeight: 480)
         .alert(isPresented: $showingResetAlert) {
             Alert(
                 title: Text("Reset All Settings?"),
@@ -199,6 +160,9 @@ struct SettingsView: View {
                 primaryButton: .destructive(Text("Reset"), action: onResetAll),
                 secondaryButton: .cancel()
             )
+        }
+        .sheet(isPresented: $showingIconPicker) {
+            IconPickerView(iconSettings: iconSettings)
         }
     }
 
@@ -237,54 +201,6 @@ struct SettingsView: View {
         formatter.timeStyle = .short
         return formatter
     }()
-
-    private struct IconChoice: Identifiable {
-        var id: String { symbolName }
-        let title: String
-        let symbolName: String
-    }
-
-    private static let iconChoices: [IconChoice] = [
-        IconChoice(title: "Folder", symbolName: "folder.fill"),
-        IconChoice(title: "Folder (Outline)", symbolName: "folder"),
-        IconChoice(title: "Tray", symbolName: "tray.fill"),
-        IconChoice(title: "Downloads", symbolName: "arrow.down.circle.fill"),
-        IconChoice(title: "Grid", symbolName: "square.grid.2x2.fill"),
-        IconChoice(title: "List", symbolName: "list.bullet"),
-        IconChoice(title: "Doc", symbolName: "doc.fill"),
-        IconChoice(title: "Docs", symbolName: "doc.on.doc.fill"),
-        IconChoice(title: "Bookmark", symbolName: "bookmark.fill"),
-        IconChoice(title: "Tag", symbolName: "tag.fill"),
-        IconChoice(title: "Star", symbolName: "star.fill"),
-        IconChoice(title: "Heart", symbolName: "heart.fill"),
-        IconChoice(title: "Pin", symbolName: "pin.fill"),
-        IconChoice(title: "Archive", symbolName: "archivebox.fill"),
-        IconChoice(title: "Clock", symbolName: "clock.fill"),
-        IconChoice(title: "Bolt", symbolName: "bolt.fill"),
-        IconChoice(title: "Sparkle", symbolName: "sparkles"),
-        IconChoice(title: "Gear", symbolName: "gearshape.fill"),
-        IconChoice(title: "Paperclip", symbolName: "paperclip"),
-        IconChoice(title: "Cloud", symbolName: "icloud.fill"),
-        IconChoice(title: "House", symbolName: "house.fill"),
-        IconChoice(title: "Magnifier", symbolName: "magnifyingglass"),
-        IconChoice(title: "Check", symbolName: "checkmark.circle.fill"),
-        IconChoice(title: "X", symbolName: "xmark.circle.fill"),
-        IconChoice(title: "Info", symbolName: "info.circle.fill"),
-        IconChoice(title: "Bell", symbolName: "bell.fill"),
-        IconChoice(title: "Lock", symbolName: "lock.fill"),
-        IconChoice(title: "Person", symbolName: "person.fill"),
-        IconChoice(title: "Photo", symbolName: "photo.fill"),
-        IconChoice(title: "Music", symbolName: "music.note"),
-        IconChoice(title: "Video", symbolName: "video.fill")
-    ]
-
-    private static let iconGridColumns: [GridItem] = [
-        GridItem(.fixed(88), spacing: 10),
-        GridItem(.fixed(88), spacing: 10),
-        GridItem(.fixed(88), spacing: 10),
-        GridItem(.fixed(88), spacing: 10),
-        GridItem(.fixed(88), spacing: 10)
-    ]
 }
 
 private struct SettingsSection<Content: View>: View {
