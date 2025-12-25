@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="FolderBar"
 CONFIG="${1:-${CONFIG:-debug}}"
 OUTPUT_DIR="${OUTPUT_DIR:-$ROOT_DIR/build}"
+CLEAN_OUTPUT_DIR="${CLEAN_OUTPUT_DIR:-1}"
 BUNDLE_ID="${BUNDLE_ID:-com.folderbar.app}"
 ICON_NAME="AppIcon"
 ICON_SOURCE_DIR="$ROOT_DIR/Assets/AppIcon.icon"
@@ -68,6 +69,21 @@ if [[ "$CONFIG" == "release" ]]; then
     exit 1
   fi
 fi
+
+if [[ "$CLEAN_OUTPUT_DIR" == "1" ]]; then
+  output_dir_real="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$OUTPUT_DIR")"
+  root_dir_real="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$ROOT_DIR")"
+  if [[ -z "$output_dir_real" || "$output_dir_real" == "/" || "$output_dir_real" == "$root_dir_real" ]]; then
+    echo "Refusing to clean unsafe OUTPUT_DIR: '$OUTPUT_DIR' -> '$output_dir_real'" >&2
+    exit 1
+  fi
+  if [[ "$output_dir_real" != "$root_dir_real/"* ]]; then
+    echo "Refusing to clean OUTPUT_DIR outside repo: '$OUTPUT_DIR' -> '$output_dir_real'" >&2
+    exit 1
+  fi
+  rm -rf "$OUTPUT_DIR"
+fi
+mkdir -p "$OUTPUT_DIR"
 
 swift build -c "$CONFIG"
 BIN_DIR="$(swift build -c "$CONFIG" --show-bin-path)"

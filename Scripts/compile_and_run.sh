@@ -75,4 +75,3 @@ done
 
 echo "Failed to launch $APP_NAME after $max_attempts attempts." >&2
 exit 1
-fi
