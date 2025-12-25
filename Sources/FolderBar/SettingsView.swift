@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var viewModel: FolderSelectionViewModel
     @ObservedObject var updater: FolderBarUpdater
+    @ObservedObject var iconSettings: StatusItemIconSettings
     let appVersion: String
     let appSigningSummary: String?
     let onChooseFolder: () -> Void
@@ -32,14 +33,34 @@ struct SettingsView: View {
                     Divider()
                         .padding(.vertical, 16)
 
-                    SettingsSection(title: "App Icon") {
-                        HStack(alignment: .firstTextBaseline, spacing: 16) {
-                            Text("Default icon")
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
-                            Spacer(minLength: 12)
-                            Button("Change Icon…") {}
-                                .disabled(true)
+                    SettingsSection(title: "Menu Bar Icon") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(alignment: .center, spacing: 12) {
+                                Image(systemName: iconSettings.resolvedSymbolName)
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .frame(width: 22, alignment: .center)
+                                    .foregroundColor(.secondary)
+
+                                TextField("SF Symbol name (eg: folder.fill)", text: $iconSettings.symbolName)
+                                    .textFieldStyle(.roundedBorder)
+
+                                Menu("Choose…") {
+                                    ForEach(Self.suggestedSymbols, id: \.self) { symbol in
+                                        Button(symbol) { iconSettings.symbolName = symbol }
+                                    }
+
+                                    Divider()
+
+                                    Button("Reset to Default") { iconSettings.resetToDefault() }
+                                }
+                                .controlSize(.small)
+                            }
+
+                            if !iconSettings.isValidSymbol {
+                                Text("Unknown SF Symbol. Using default icon.")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                            }
                         }
                     }
 
@@ -175,6 +196,18 @@ struct SettingsView: View {
         formatter.timeStyle = .short
         return formatter
     }()
+
+    private static let suggestedSymbols: [String] = [
+        "folder.fill",
+        "folder",
+        "folder.circle.fill",
+        "tray.fill",
+        "tray",
+        "square.grid.2x2.fill",
+        "doc.fill",
+        "bookmark.fill",
+        "arrow.down.circle.fill"
+    ]
 }
 
 private struct SettingsSection<Content: View>: View {

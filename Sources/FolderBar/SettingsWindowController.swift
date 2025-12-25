@@ -5,6 +5,7 @@ import SwiftUI
 final class SettingsWindowController {
     private let viewModel: FolderSelectionViewModel
     private let updater: FolderBarUpdater
+    private let iconSettings: StatusItemIconSettings
     private let appSigningSummary: String?
     private lazy var window: NSWindow = {
         let window = NSWindow(
@@ -16,6 +17,7 @@ final class SettingsWindowController {
         let view = SettingsView(
             viewModel: viewModel,
             updater: updater,
+            iconSettings: iconSettings,
             appVersion: appVersion,
             appSigningSummary: appSigningSummary,
             onChooseFolder: { [weak self] in
@@ -24,6 +26,7 @@ final class SettingsWindowController {
             },
             onResetAll: { [weak self] in
                 self?.viewModel.resetAllSettings()
+                self?.iconSettings.resetToDefault()
             }
         )
         let hostingController = NSHostingController(rootView: view)
@@ -36,9 +39,10 @@ final class SettingsWindowController {
         return window
     }()
 
-    init(viewModel: FolderSelectionViewModel, updater: FolderBarUpdater) {
+    init(viewModel: FolderSelectionViewModel, updater: FolderBarUpdater, iconSettings: StatusItemIconSettings) {
         self.viewModel = viewModel
         self.updater = updater
+        self.iconSettings = iconSettings
         self.appSigningSummary = AppSigningInfo.warningSummary()
     }
 

@@ -9,9 +9,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let logger = Logger(subsystem: AppDelegate.subsystem, category: "Lifecycle")
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     private let folderSelectionViewModel = FolderSelectionViewModel()
+    private let iconSettings = StatusItemIconSettings()
     private let updater = FolderBarUpdater()
     private var updateProbeTimer: Timer?
-    private lazy var settingsWindowController = SettingsWindowController(viewModel: folderSelectionViewModel, updater: updater)
+    private lazy var settingsWindowController = SettingsWindowController(
+        viewModel: folderSelectionViewModel,
+        updater: updater,
+        iconSettings: iconSettings
+    )
     private lazy var panelController = MenuBarPanelController(
         statusItem: statusItem,
         rootView: AnyView(
@@ -37,8 +42,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         logger.info("Application finished launching")
 
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "folder.fill", accessibilityDescription: "FolderBar")
-            button.image?.isTemplate = true
+            applyStatusItemIcon(symbolName: iconSettings.resolvedSymbolName)
+            iconSettings.onChange = { [weak self] symbolName in
+                self?.applyStatusItemIcon(symbolName: symbolName)
+            }
             button.target = self
             button.action = #selector(togglePanel(_:))
         }
@@ -63,6 +70,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func togglePanel(_: Any?) {
         panelController.toggle()
+    }
+
+    private func applyStatusItemIcon(symbolName: String) {
+        statusItem.button?.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "FolderBar")
+        statusItem.button?.image?.isTemplate = true
     }
 
     private func scheduleUpdateProbes() {
