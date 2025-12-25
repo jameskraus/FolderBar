@@ -2,11 +2,12 @@ import AppKit
 import SwiftUI
 
 @MainActor
-final class SettingsWindowController {
+final class SettingsWindowController: NSObject, NSWindowDelegate {
     private let viewModel: FolderSelectionViewModel
     private let updater: FolderBarUpdater
     private let iconSettings: StatusItemIconSettings
     private let appSigningSummary: String?
+    private var previousActivationPolicy: NSApplication.ActivationPolicy?
     private lazy var window: NSWindow = {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 500, height: 480),
@@ -36,6 +37,7 @@ final class SettingsWindowController {
         window.contentViewController = hostingController
         window.isReleasedWhenClosed = false
         window.tabbingMode = .disallowed
+        window.delegate = self
         return window
     }()
 
@@ -44,15 +46,41 @@ final class SettingsWindowController {
         self.updater = updater
         self.iconSettings = iconSettings
         self.appSigningSummary = AppSigningInfo.warningSummary()
+        super.init()
     }
 
     func show() {
+        beginAppActivationForSettings()
         window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
     }
 
     private var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
         return version ?? "0.0.0"
+    }
+
+    func windowWillClose(_: Notification) {
+        restoreActivationPolicyIfNeeded()
+    }
+
+    private func beginAppActivationForSettings() {
+        if previousActivationPolicy == nil {
+            previousActivationPolicy = NSApp.activationPolicy()
+        }
+        if NSApp.activationPolicy() != .regular {
+            _ = NSApp.setActivationPolicy(.regular)
+        }
+        NSApp.unhide(nil)
+        NSRunningApplication.current.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func restoreActivationPolicyIfNeeded() {
+        guard let policy = previousActivationPolicy else { return }
+        previousActivationPolicy = nil
+        guard NSApp.activationPolicy() != policy else { return }
+        DispatchQueue.main.async {
+            _ = NSApp.setActivationPolicy(policy)
+        }
     }
 }
