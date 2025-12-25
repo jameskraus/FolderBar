@@ -96,7 +96,8 @@ CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
 FRAMEWORKS_DIR="$CONTENTS_DIR/Frameworks"
-ICONSET_DIR="$OUTPUT_DIR/$ICON_NAME.iconset"
+ICON_XCASSETS_DIR="$OUTPUT_DIR/$ICON_NAME.xcassets"
+APPICONSET_DIR="$ICON_XCASSETS_DIR/$ICON_NAME.appiconset"
 ICON_OUTPUT="$RESOURCES_DIR/$ICON_NAME.icns"
 
 rm -rf "$APP_DIR"
@@ -122,19 +123,66 @@ if [[ ! -f "$ICON_SOURCE_PNG" ]]; then
   exit 1
 fi
 
-rm -rf "$ICONSET_DIR"
-mkdir -p "$ICONSET_DIR"
-sips -z 16 16 "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/icon_16x16.png" >/dev/null
-sips -z 32 32 "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/icon_16x16@2x.png" >/dev/null
-sips -z 32 32 "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/icon_32x32.png" >/dev/null
-sips -z 64 64 "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/icon_32x32@2x.png" >/dev/null
-sips -z 128 128 "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/icon_128x128.png" >/dev/null
-sips -z 256 256 "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/icon_128x128@2x.png" >/dev/null
-sips -z 256 256 "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/icon_256x256.png" >/dev/null
-sips -z 512 512 "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/icon_256x256@2x.png" >/dev/null
-sips -z 512 512 "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/icon_512x512.png" >/dev/null
-sips -z 1024 1024 "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/icon_512x512@2x.png" >/dev/null
-iconutil -c icns "$ICONSET_DIR" -o "$ICON_OUTPUT"
+rm -rf "$ICON_XCASSETS_DIR"
+mkdir -p "$APPICONSET_DIR"
+cat > "$ICON_XCASSETS_DIR/Contents.json" <<'JSON'
+{
+  "info" : { "author" : "xcode", "version" : 1 }
+}
+JSON
+cat > "$APPICONSET_DIR/Contents.json" <<'JSON'
+{
+  "images" : [
+    { "filename" : "icon_16x16.png", "idiom" : "mac", "scale" : "1x", "size" : "16x16" },
+    { "filename" : "icon_16x16@2x.png", "idiom" : "mac", "scale" : "2x", "size" : "16x16" },
+
+    { "filename" : "icon_32x32.png", "idiom" : "mac", "scale" : "1x", "size" : "32x32" },
+    { "filename" : "icon_32x32@2x.png", "idiom" : "mac", "scale" : "2x", "size" : "32x32" },
+
+    { "filename" : "icon_128x128.png", "idiom" : "mac", "scale" : "1x", "size" : "128x128" },
+    { "filename" : "icon_128x128@2x.png", "idiom" : "mac", "scale" : "2x", "size" : "128x128" },
+
+    { "filename" : "icon_256x256.png", "idiom" : "mac", "scale" : "1x", "size" : "256x256" },
+    { "filename" : "icon_256x256@2x.png", "idiom" : "mac", "scale" : "2x", "size" : "256x256" },
+
+    { "filename" : "icon_512x512.png", "idiom" : "mac", "scale" : "1x", "size" : "512x512" },
+    { "filename" : "icon_512x512@2x.png", "idiom" : "mac", "scale" : "2x", "size" : "512x512" }
+  ],
+  "info" : { "author" : "xcode", "version" : 1 }
+}
+JSON
+sips -z 16 16 "$ICON_SOURCE_PNG" --out "$APPICONSET_DIR/icon_16x16.png" >/dev/null
+sips -z 32 32 "$ICON_SOURCE_PNG" --out "$APPICONSET_DIR/icon_16x16@2x.png" >/dev/null
+sips -z 32 32 "$ICON_SOURCE_PNG" --out "$APPICONSET_DIR/icon_32x32.png" >/dev/null
+sips -z 64 64 "$ICON_SOURCE_PNG" --out "$APPICONSET_DIR/icon_32x32@2x.png" >/dev/null
+sips -z 128 128 "$ICON_SOURCE_PNG" --out "$APPICONSET_DIR/icon_128x128.png" >/dev/null
+sips -z 256 256 "$ICON_SOURCE_PNG" --out "$APPICONSET_DIR/icon_128x128@2x.png" >/dev/null
+sips -z 256 256 "$ICON_SOURCE_PNG" --out "$APPICONSET_DIR/icon_256x256.png" >/dev/null
+sips -z 512 512 "$ICON_SOURCE_PNG" --out "$APPICONSET_DIR/icon_256x256@2x.png" >/dev/null
+sips -z 512 512 "$ICON_SOURCE_PNG" --out "$APPICONSET_DIR/icon_512x512.png" >/dev/null
+sips -z 1024 1024 "$ICON_SOURCE_PNG" --out "$APPICONSET_DIR/icon_512x512@2x.png" >/dev/null
+
+ACTOOL="$(xcrun --find actool)"
+"$ACTOOL" \
+  --output-format human-readable-text \
+  --warnings --errors \
+  "$ICON_XCASSETS_DIR" \
+  --app-icon "$ICON_NAME" \
+  --compile "$RESOURCES_DIR" \
+  --output-partial-info-plist "$OUTPUT_DIR/assetcatalog_generated_info.plist" \
+  --minimum-deployment-target 11.0 \
+  --platform macosx \
+  --target-device mac \
+  --standalone-icon-behavior all
+
+if [[ ! -f "$RESOURCES_DIR/Assets.car" ]]; then
+  echo "actool output missing Assets.car at: $RESOURCES_DIR/Assets.car" >&2
+  exit 1
+fi
+if [[ ! -f "$ICON_OUTPUT" ]]; then
+  echo "actool output missing icon at: $ICON_OUTPUT" >&2
+  exit 1
+fi
 
 cat > "$CONTENTS_DIR/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -150,7 +198,9 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
   <key>CFBundleIdentifier</key>
   <string>$BUNDLE_ID</string>
   <key>CFBundleIconFile</key>
-  <string>$ICON_NAME.icns</string>
+  <string>$ICON_NAME</string>
+  <key>CFBundleIconName</key>
+  <string>$ICON_NAME</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>
