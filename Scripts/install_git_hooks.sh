@@ -20,22 +20,38 @@ fi
 
 mkdir -p "$HOOKS_DIR"
 
-if [[ -f "$TARGET_HOOK" ]] && ! grep -qE '\.githooks/pre-push' "$TARGET_HOOK" 2>/dev/null; then
+chmod +x "$SOURCE_HOOK"
+
+if [[ -f "$TARGET_HOOK" ]]; then
+  if grep -qE '\.githooks/pre-push' "$TARGET_HOOK" 2>/dev/null; then
+    echo "pre-push hook already invokes .githooks/pre-push; nothing to do." >&2
+    exit 0
+  fi
+
   backup="$TARGET_HOOK.backup.$(date +%Y%m%d%H%M%S)"
   cp "$TARGET_HOOK" "$backup"
   echo "Backed up existing pre-push hook to: $backup" >&2
-fi
 
-cat >"$TARGET_HOOK" <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
+  cat >>"$TARGET_HOOK" <<'EOF'
 
-ROOT="$(git rev-parse --show-toplevel)"
+# FolderBar: repo-managed SwiftLint pre-push hook
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 1
+"$ROOT/.githooks/pre-push" "$@" || exit $?
+EOF
+
+  chmod +x "$TARGET_HOOK"
+  echo "Updated pre-push hook (appended): $TARGET_HOOK" >&2
+else
+  cat >"$TARGET_HOOK" <<'EOF'
+#!/bin/sh
+set -e
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 1
 exec "$ROOT/.githooks/pre-push" "$@"
 EOF
 
-chmod +x "$TARGET_HOOK" "$SOURCE_HOOK"
+  chmod +x "$TARGET_HOOK"
+  echo "Installed pre-push hook: $TARGET_HOOK" >&2
+fi
 
-echo "Installed pre-push hook: $TARGET_HOOK" >&2
 echo "To skip once: git push --no-verify (or SKIP_SWIFTLINT=1 git push)" >&2
-

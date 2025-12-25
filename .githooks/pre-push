@@ -4,38 +4,6 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
-# Keep bd (beads) safety behavior: prevent pushing stale JSONL.
-if [[ -d .beads ]]; then
-  if [[ -n "${BD_SYNC_IN_PROGRESS:-}" ]]; then
-    exit 0
-  fi
-
-  sync_branch="${BEADS_SYNC_BRANCH:-}"
-  if [[ -z "$sync_branch" && -f .beads/config.yaml ]]; then
-    sync_branch="$(grep -E '^sync-branch:' .beads/config.yaml 2>/dev/null | head -1 | sed 's/^sync-branch:[[:space:]]*//' | sed 's/^["'"'"']//' | sed 's/["'"'"']$//' || true)"
-  fi
-
-  if [[ -z "$sync_branch" ]]; then
-    if command -v bd >/dev/null 2>&1; then
-      bd sync --flush-only >/dev/null 2>&1 || true
-    fi
-
-    beads_files=()
-    for f in .beads/beads.jsonl .beads/issues.jsonl .beads/deletions.jsonl; do
-      if git ls-files --error-unmatch "$f" >/dev/null 2>&1 || [[ -f "$f" ]]; then
-        beads_files+=("$f")
-      fi
-    done
-
-    if [[ "${#beads_files[@]}" -gt 0 ]]; then
-      if [[ -n "$(git status --porcelain -- "${beads_files[@]}" 2>/dev/null)" ]]; then
-        echo "❌ Error: Uncommitted .beads changes detected. Run 'bd sync' before pushing." >&2
-        exit 1
-      fi
-    fi
-  fi
-fi
-
 if [[ "${SKIP_SWIFTLINT:-}" == "1" || "${FOLDERBAR_SKIP_LINT:-}" == "1" ]]; then
   exit 0
 fi
@@ -52,18 +20,34 @@ EMPTY_TREE="$(git hash-object -t tree /dev/null)"
 tmpfile="$(mktemp)"
 trap 'rm -f "$tmpfile"' EXIT
 
-while read -r local_ref local_sha remote_ref remote_sha; do
-  if [[ -z "${local_sha}" ]]; then
-    continue
-  fi
+stdin=""
+if [[ ! -t 0 ]]; then
+  stdin="$(cat || true)"
+fi
 
-  base_sha="$remote_sha"
-  if [[ "${remote_sha}" =~ ^0+$ ]]; then
-    base_sha="$EMPTY_TREE"
-  fi
+if [[ -n "$stdin" ]]; then
+  while read -r local_ref local_sha remote_ref remote_sha; do
+    if [[ -z "${local_sha}" ]]; then
+      continue
+    fi
 
-  git diff --name-only "$base_sha" "$local_sha" -- '*.swift' >>"$tmpfile" || true
-done
+    base_sha="$remote_sha"
+    if [[ "${remote_sha}" =~ ^0+$ ]]; then
+      base_sha="$EMPTY_TREE"
+    fi
+
+    git diff --name-only "$base_sha" "$local_sha" -- '*.swift' >>"$tmpfile" || true
+  done <<<"$stdin"
+else
+  if git rev-parse --verify '@{u}' >/dev/null 2>&1; then
+    upstream="$(git rev-parse '@{u}')"
+    base_sha="$(git merge-base HEAD "$upstream")"
+    git diff --name-only "$base_sha" HEAD -- '*.swift' >>"$tmpfile" || true
+  else
+    swiftlint lint --strict --config "$ROOT/.swiftlint.yml" --quiet --working-directory "$ROOT"
+    exit $?
+  fi
+fi
 
 if [[ ! -s "$tmpfile" ]]; then
   exit 0

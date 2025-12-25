@@ -68,6 +68,8 @@ make lint
 ./Scripts/install_git_hooks.sh
 ```
 
+This appends a call to the repo-managed hook into your local `.git/hooks/pre-push` (so existing hooks like `bd` keep working).
+
 ## Package (macOS app bundle)
 
 ```bash
