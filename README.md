@@ -26,22 +26,24 @@ Menu bar app for surfacing folders and their contents.
 swift build
 ```
 
-## Run (fast, from source)
+## Run (development)
+
+FolderBar runs as a packaged `.app` (Sparkle and signing behave differently outside a real bundle).
+
+### Quick run (no signing)
+
+If you want the lowest-friction run (no signing identity required):
 
 ```bash
-swift run FolderBar
+SIGN_ADHOC=0 ./Scripts/compile_and_run.sh
 ```
 
-Note: when running from source (not a `.app` bundle), Sparkle updates are disabled.
+### Recommended run (signed)
 
-## Dev loop (recommended)
-
-Builds a real `.app` bundle in `build/` (matches production behavior more closely) and relaunches it:
+If you want behavior closest to release builds (fewer permission prompts, Sparkle closer to “real”):
 
 ```bash
-./Scripts/compile_and_run.sh
-# or
-make compile_and_run
+SIGNING_IDENTITY="Apple Development: Your Name (TEAMID)" ./Scripts/compile_and_run.sh
 ```
 
 ## Lint / Format
@@ -76,7 +78,13 @@ Both `Scripts/package_app.sh` and `Scripts/compile_and_run.sh` will source `.env
 
 ## Release (signed + notarized + published)
 
-Create a `.env` file with release signing + notarization values, and set `SPARKLE_PUBLIC_ED_KEY` in `.env.local`:
+If someone tells you to release the app, do this:
+
+1) Ensure you’re on `main` with a clean working tree.
+2) Bump `version.env` (the release script reads `VERSION=` from here).
+3) Run `./Scripts/release.sh`.
+
+Pre-req: create a `.env` file with release signing + notarization values, and set `SPARKLE_PUBLIC_ED_KEY` in `.env.local`:
 
 ```bash
 RELEASE_SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)"
