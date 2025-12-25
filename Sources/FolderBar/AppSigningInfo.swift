@@ -2,7 +2,7 @@ import Foundation
 import Security
 
 enum AppSigningInfo {
-    static func summary() -> String {
+    static func warningSummary() -> String? {
         guard Bundle.main.bundleURL.pathExtension == "app" else {
             return "Signing: (not an app bundle)"
         }
@@ -40,14 +40,13 @@ enum AppSigningInfo {
             .flatMap { $0.first }
             .flatMap { SecCertificateCopySubjectSummary($0) as String? }
 
-        if let teamID {
-            if let certificateSummary {
-                return "Signing: \(certificateSummary) (\(teamID))"
-            }
-            return "Signing: Team \(teamID)"
+        if teamID != nil {
+            return nil
         }
 
+        if let certificateSummary {
+            return "Signing: \(certificateSummary) (missing Team ID)"
+        }
         return "Signing: ad-hoc"
     }
 }
-

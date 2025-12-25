@@ -5,7 +5,7 @@ import SwiftUI
 final class SettingsWindowController {
     private let viewModel: FolderSelectionViewModel
     private let updater: FolderBarUpdater
-    private let appSigningSummary: String
+    private let appSigningSummary: String?
     private lazy var window: NSWindow = {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 360, height: 320),
@@ -38,7 +38,7 @@ final class SettingsWindowController {
     init(viewModel: FolderSelectionViewModel, updater: FolderBarUpdater) {
         self.viewModel = viewModel
         self.updater = updater
-        self.appSigningSummary = AppSigningInfo.summary()
+        self.appSigningSummary = AppSigningInfo.warningSummary()
     }
 
     func show() {
