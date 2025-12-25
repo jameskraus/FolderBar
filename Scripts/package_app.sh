@@ -9,6 +9,7 @@ BUNDLE_ID="${BUNDLE_ID:-com.folderbar.app}"
 ICON_NAME="AppIcon"
 ICON_SOURCE_DIR="$ROOT_DIR/Assets/AppIcon.icon"
 ICON_SOURCE_PNG="$ICON_SOURCE_DIR/Assets/FolderBar.png"
+DEBUG_SETTINGS_ICON_SOURCE_DIR="$ROOT_DIR/Assets/AppIcon-Debug.icon"
 VERSION="${VERSION:-}"
 VERSION_FILE="$ROOT_DIR/version.env"
 ENV_FILES=("$ROOT_DIR/.env" "$ROOT_DIR/.env.local")
@@ -96,9 +97,9 @@ CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
 FRAMEWORKS_DIR="$CONTENTS_DIR/Frameworks"
-ICON_XCASSETS_DIR="$OUTPUT_DIR/$ICON_NAME.xcassets"
-APPICONSET_DIR="$ICON_XCASSETS_DIR/$ICON_NAME.appiconset"
+ICONSET_DIR="$OUTPUT_DIR/$ICON_NAME.iconset"
 ICON_OUTPUT="$RESOURCES_DIR/$ICON_NAME.icns"
+DEBUG_SETTINGS_ICON_OUTPUT="$RESOURCES_DIR/SettingsHeaderIcon-Debug.png"
 
 rm -rf "$APP_DIR"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR" "$FRAMEWORKS_DIR"
@@ -123,66 +124,161 @@ if [[ ! -f "$ICON_SOURCE_PNG" ]]; then
   exit 1
 fi
 
-rm -rf "$ICON_XCASSETS_DIR"
-mkdir -p "$APPICONSET_DIR"
-cat > "$ICON_XCASSETS_DIR/Contents.json" <<'JSON'
-{
-  "info" : { "author" : "xcode", "version" : 1 }
+rm -rf "$ICONSET_DIR"
+mkdir -p "$ICONSET_DIR"
+
+find_ictool() {
+  local ictool_path="/Applications/Icon Composer.app/Contents/Executables/ictool"
+  if [[ -x "$ictool_path" ]]; then
+    echo "$ictool_path"
+    return 0
+  fi
+  if command -v ictool >/dev/null 2>&1; then
+    command -v ictool
+    return 0
+  fi
+  return 1
 }
-JSON
-cat > "$APPICONSET_DIR/Contents.json" <<'JSON'
-{
-  "images" : [
-    { "filename" : "icon_16x16.png", "idiom" : "mac", "scale" : "1x", "size" : "16x16" },
-    { "filename" : "icon_16x16@2x.png", "idiom" : "mac", "scale" : "2x", "size" : "16x16" },
 
-    { "filename" : "icon_32x32.png", "idiom" : "mac", "scale" : "1x", "size" : "32x32" },
-    { "filename" : "icon_32x32@2x.png", "idiom" : "mac", "scale" : "2x", "size" : "32x32" },
+ICTOOL="$(find_ictool || true)"
 
-    { "filename" : "icon_128x128.png", "idiom" : "mac", "scale" : "1x", "size" : "128x128" },
-    { "filename" : "icon_128x128@2x.png", "idiom" : "mac", "scale" : "2x", "size" : "128x128" },
+if [[ -n "$ICTOOL" && -d "$ICON_SOURCE_DIR" ]]; then
+  ICON_WORK_DIR="$OUTPUT_DIR/icon_work"
+  ICON_MASK_TOOL="$ICON_WORK_DIR/iconmask"
+  ICON_MASK_SRC="$ICON_WORK_DIR/iconmask.swift"
 
-    { "filename" : "icon_256x256.png", "idiom" : "mac", "scale" : "1x", "size" : "256x256" },
-    { "filename" : "icon_256x256@2x.png", "idiom" : "mac", "scale" : "2x", "size" : "256x256" },
+  mkdir -p "$ICON_WORK_DIR"
+  cat > "$ICON_MASK_SRC" <<'SWIFT'
+import Foundation
+import CoreImage
+import ImageIO
+import UniformTypeIdentifiers
 
-    { "filename" : "icon_512x512.png", "idiom" : "mac", "scale" : "1x", "size" : "512x512" },
-    { "filename" : "icon_512x512@2x.png", "idiom" : "mac", "scale" : "2x", "size" : "512x512" }
-  ],
-  "info" : { "author" : "xcode", "version" : 1 }
+if CommandLine.arguments.count != 4 && CommandLine.arguments.count != 5 {
+  fputs("Usage: iconmask <base.png> <mask.png> <out.png> [insetScale]\n", stderr)
+  exit(2)
 }
-JSON
-sips -z 16 16 "$ICON_SOURCE_PNG" --out "$APPICONSET_DIR/icon_16x16.png" >/dev/null
-sips -z 32 32 "$ICON_SOURCE_PNG" --out "$APPICONSET_DIR/icon_16x16@2x.png" >/dev/null
-sips -z 32 32 "$ICON_SOURCE_PNG" --out "$APPICONSET_DIR/icon_32x32.png" >/dev/null
-sips -z 64 64 "$ICON_SOURCE_PNG" --out "$APPICONSET_DIR/icon_32x32@2x.png" >/dev/null
-sips -z 128 128 "$ICON_SOURCE_PNG" --out "$APPICONSET_DIR/icon_128x128.png" >/dev/null
-sips -z 256 256 "$ICON_SOURCE_PNG" --out "$APPICONSET_DIR/icon_128x128@2x.png" >/dev/null
-sips -z 256 256 "$ICON_SOURCE_PNG" --out "$APPICONSET_DIR/icon_256x256.png" >/dev/null
-sips -z 512 512 "$ICON_SOURCE_PNG" --out "$APPICONSET_DIR/icon_256x256@2x.png" >/dev/null
-sips -z 512 512 "$ICON_SOURCE_PNG" --out "$APPICONSET_DIR/icon_512x512.png" >/dev/null
-sips -z 1024 1024 "$ICON_SOURCE_PNG" --out "$APPICONSET_DIR/icon_512x512@2x.png" >/dev/null
 
-ACTOOL="$(xcrun --find actool)"
-"$ACTOOL" \
-  --output-format human-readable-text \
-  --warnings --errors \
-  "$ICON_XCASSETS_DIR" \
-  --app-icon "$ICON_NAME" \
-  --compile "$RESOURCES_DIR" \
-  --output-partial-info-plist "$OUTPUT_DIR/assetcatalog_generated_info.plist" \
-  --minimum-deployment-target 11.0 \
-  --platform macosx \
-  --target-device mac \
-  --standalone-icon-behavior all
+let baseURL = URL(fileURLWithPath: CommandLine.arguments[1])
+let maskURL = URL(fileURLWithPath: CommandLine.arguments[2])
+let outURL = URL(fileURLWithPath: CommandLine.arguments[3])
+let insetScale = (CommandLine.arguments.count == 5 ? Double(CommandLine.arguments[4]) : nil) ?? 1.0
 
-if [[ ! -f "$RESOURCES_DIR/Assets.car" ]]; then
-  echo "actool output missing Assets.car at: $RESOURCES_DIR/Assets.car" >&2
-  exit 1
+guard let base = CIImage(contentsOf: baseURL), let mask = CIImage(contentsOf: maskURL) else {
+  fputs("Failed to load input images\n", stderr)
+  exit(1)
+}
+
+let extent = base.extent
+let clear = CIImage(color: .clear).cropped(to: extent)
+guard let filter = CIFilter(name: "CIBlendWithAlphaMask") else {
+  fputs("Missing CIBlendWithAlphaMask\n", stderr)
+  exit(1)
+}
+filter.setValue(base, forKey: kCIInputImageKey)
+filter.setValue(clear, forKey: kCIInputBackgroundImageKey)
+filter.setValue(mask, forKey: kCIInputMaskImageKey)
+guard let output = filter.outputImage?.cropped(to: extent) else {
+  fputs("Failed to render output\n", stderr)
+  exit(1)
+}
+
+let finalImage: CIImage
+if insetScale > 0 && insetScale < 1 {
+  let scaleFilter = CIFilter(name: "CILanczosScaleTransform")!
+  scaleFilter.setValue(output, forKey: kCIInputImageKey)
+  scaleFilter.setValue(insetScale, forKey: kCIInputScaleKey)
+  scaleFilter.setValue(1.0, forKey: kCIInputAspectRatioKey)
+  guard let scaled = scaleFilter.outputImage else {
+    fputs("Failed to scale output\n", stderr)
+    exit(1)
+  }
+
+  let tx = (extent.width - scaled.extent.width) / 2.0 - scaled.extent.origin.x
+  let ty = (extent.height - scaled.extent.height) / 2.0 - scaled.extent.origin.y
+  let centered = scaled.transformed(by: CGAffineTransform(translationX: tx, y: ty))
+
+  let composite = CIFilter(name: "CISourceOverCompositing")!
+  composite.setValue(centered, forKey: kCIInputImageKey)
+  composite.setValue(clear, forKey: kCIInputBackgroundImageKey)
+  finalImage = composite.outputImage!.cropped(to: extent)
+} else {
+  finalImage = output
+}
+
+let context = CIContext(options: [.useSoftwareRenderer: false])
+guard let cgImage = context.createCGImage(finalImage, from: finalImage.extent) else {
+  fputs("Failed to create CGImage\n", stderr)
+  exit(1)
+}
+
+guard let dest = CGImageDestinationCreateWithURL(outURL as CFURL, UTType.png.identifier as CFString, 1, nil) else {
+  fputs("Failed to create output destination\n", stderr)
+  exit(1)
+}
+CGImageDestinationAddImage(dest, cgImage, nil)
+if !CGImageDestinationFinalize(dest) {
+  fputs("Failed to write output\n", stderr)
+  exit(1)
+}
+SWIFT
+
+  xcrun swiftc "$ICON_MASK_SRC" -O -o "$ICON_MASK_TOOL"
+
+  render_icon_png() {
+    local points="$1"
+    local scale="$2"
+    local out="$3"
+    local base="$ICON_WORK_DIR/base_${points}_${scale}.png"
+    local mask="$ICON_WORK_DIR/mask_${points}_${scale}.png"
+    local source_doc="${4:-$ICON_SOURCE_DIR}"
+    local inset_scale="${5:-${ICON_INSET_SCALE:-0.8125}}"
+
+    "$ICTOOL" "$source_doc" \
+      --export-image --output-file "$base" \
+      --platform macOS --rendition Default \
+      --width "$points" --height "$points" --scale "$scale" >/dev/null
+
+    "$ICTOOL" "$source_doc" \
+      --export-image --output-file "$mask" \
+      --platform macOS --rendition ClearDark \
+      --width "$points" --height "$points" --scale "$scale" >/dev/null
+
+    "$ICON_MASK_TOOL" "$base" "$mask" "$out" "$inset_scale"
+  }
+
+  render_icon_png 16 1 "$ICONSET_DIR/icon_16x16.png"
+  render_icon_png 16 2 "$ICONSET_DIR/icon_16x16@2x.png"
+  render_icon_png 32 1 "$ICONSET_DIR/icon_32x32.png"
+  render_icon_png 32 2 "$ICONSET_DIR/icon_32x32@2x.png"
+  render_icon_png 128 1 "$ICONSET_DIR/icon_128x128.png"
+  render_icon_png 128 2 "$ICONSET_DIR/icon_128x128@2x.png"
+  render_icon_png 256 1 "$ICONSET_DIR/icon_256x256.png"
+  render_icon_png 256 2 "$ICONSET_DIR/icon_256x256@2x.png"
+  render_icon_png 512 1 "$ICONSET_DIR/icon_512x512.png"
+  render_icon_png 512 2 "$ICONSET_DIR/icon_512x512@2x.png"
+
+  if [[ "$CONFIG" == "debug" && -d "$DEBUG_SETTINGS_ICON_SOURCE_DIR" ]]; then
+    render_icon_png 1024 1 "$DEBUG_SETTINGS_ICON_OUTPUT" "$DEBUG_SETTINGS_ICON_SOURCE_DIR" "1.0" || true
+  fi
+else
+  echo "Warning: Icon Composer ictool not found; falling back to resizing $ICON_SOURCE_PNG" >&2
+  sips -z 16 16 "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/icon_16x16.png" >/dev/null
+  sips -z 32 32 "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/icon_16x16@2x.png" >/dev/null
+  sips -z 32 32 "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/icon_32x32.png" >/dev/null
+  sips -z 64 64 "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/icon_32x32@2x.png" >/dev/null
+  sips -z 128 128 "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/icon_128x128.png" >/dev/null
+  sips -z 256 256 "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/icon_128x128@2x.png" >/dev/null
+  sips -z 256 256 "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/icon_256x256.png" >/dev/null
+  sips -z 512 512 "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/icon_256x256@2x.png" >/dev/null
+  sips -z 512 512 "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/icon_512x512.png" >/dev/null
+  sips -z 1024 1024 "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/icon_512x512@2x.png" >/dev/null
+
+  if [[ "$CONFIG" == "debug" && -f "$DEBUG_SETTINGS_ICON_SOURCE_DIR/Assets/FolderBar-Debug.png" ]]; then
+    cp "$DEBUG_SETTINGS_ICON_SOURCE_DIR/Assets/FolderBar-Debug.png" "$DEBUG_SETTINGS_ICON_OUTPUT" || true
+  fi
 fi
-if [[ ! -f "$ICON_OUTPUT" ]]; then
-  echo "actool output missing icon at: $ICON_OUTPUT" >&2
-  exit 1
-fi
+iconutil -c icns "$ICONSET_DIR" -o "$ICON_OUTPUT"
 
 cat > "$CONTENTS_DIR/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -198,9 +294,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
   <key>CFBundleIdentifier</key>
   <string>$BUNDLE_ID</string>
   <key>CFBundleIconFile</key>
-  <string>$ICON_NAME</string>
-  <key>CFBundleIconName</key>
-  <string>$ICON_NAME</string>
+  <string>$ICON_NAME.icns</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct SettingsView: View {
@@ -16,6 +17,9 @@ struct SettingsView: View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
+                    SettingsHeaderView(appVersion: appVersion, appSigningSummary: appSigningSummary)
+                        .padding(.bottom, 18)
+
                     SettingsSection(title: "Selected Folder") {
                         HStack(alignment: .firstTextBaseline, spacing: 16) {
                             VStack(alignment: .leading, spacing: 4) {
@@ -112,23 +116,6 @@ struct SettingsView: View {
                             }
                         }
                     }
-
-                    Divider()
-                        .padding(.vertical, 16)
-
-                    SettingsSection(title: "About") {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("FolderBar Version \(appVersion)")
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
-                            if let appSigningSummary {
-                                Text(appSigningSummary)
-                                    .font(.system(size: 11))
-                                    .foregroundColor(.secondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                        }
-                    }
                 }
                 .padding(.horizontal, 26)
                 .padding(.vertical, 24)
@@ -152,7 +139,7 @@ struct SettingsView: View {
             .padding(.top, 16)
             .padding(.bottom, 22)
         }
-        .frame(minWidth: 500, minHeight: 480)
+        .frame(minWidth: 500, minHeight: 560)
         .alert(isPresented: $showingResetAlert) {
             Alert(
                 title: Text("Reset All Settings?"),
@@ -215,4 +202,82 @@ private struct SettingsSection<Content: View>: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
+}
+
+private struct SettingsHeaderView: View {
+    let appVersion: String
+    let appSigningSummary: String?
+
+    var body: some View {
+        VStack(spacing: 10) {
+            appIcon
+                .frame(width: 84, height: 84)
+                .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
+
+            VStack(spacing: 2) {
+                Text("FolderBar")
+                    .font(.system(size: 18, weight: .semibold))
+
+                Text(versionText)
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+
+                if let appSigningSummary {
+                    Text(appSigningSummary)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: 420)
+                        .padding(.top, 4)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var appIcon: some View {
+        ZStack(alignment: .bottomTrailing) {
+            Image(nsImage: Self.settingsHeaderIconImage)
+                .resizable()
+                .scaledToFill()
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+#if DEBUG
+            Text("DEBUG")
+                .font(.system(size: 10, weight: .bold))
+                .padding(.horizontal, 7)
+                .padding(.vertical, 4)
+                .foregroundColor(.white)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color.orange)
+                )
+                .overlay(
+                    Capsule(style: .continuous)
+                        .strokeBorder(Color.black.opacity(0.18), lineWidth: 1)
+                )
+                .offset(x: 6, y: 6)
+#endif
+        }
+    }
+
+    private var versionText: String {
+        let build = (Bundle.main.infoDictionary?["CFBundleVersion"] as? String) ?? ""
+        if build.isEmpty || build == appVersion {
+            return "Version \(appVersion)"
+        }
+        return "Version \(appVersion) (\(build))"
+    }
+
+    private static var settingsHeaderIconImage: NSImage {
+#if DEBUG
+        if let url = Bundle.main.url(forResource: "SettingsHeaderIcon-Debug", withExtension: "png"),
+           let image = NSImage(contentsOf: url)
+        {
+            return image
+        }
+#endif
+        return NSApp.applicationIconImage
+    }
+
 }

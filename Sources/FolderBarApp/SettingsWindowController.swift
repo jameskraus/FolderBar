@@ -10,7 +10,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
     private var previousActivationPolicy: NSApplication.ActivationPolicy?
     private lazy var window: NSWindow = {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 500, height: 480),
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 560),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
@@ -31,7 +31,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
             }
         )
         let hostingController = NSHostingController(rootView: view)
-        window.minSize = NSSize(width: 500, height: 480)
+        window.minSize = NSSize(width: 500, height: 560)
         window.center()
         window.title = "Settings"
         window.contentViewController = hostingController
