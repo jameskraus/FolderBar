@@ -33,6 +33,10 @@ After any material app change, rebuild and relaunch the app:
 ./Scripts/compile_and_run.sh
 ```
 
+## Testing Philosophy
+
+Prefer fast, deterministic unit tests over UI automation. Keep domain logic in importable modules, and add “seams” (protocols/DI for time, I/O, and system APIs) so tests don’t touch the filesystem/UI unless necessary. Add a small number of integration/smoke tests for critical paths, but avoid flaky timing-dependent tests in CI.
+
 ## Bead Close Notes
 
 When closing a bead, add brief implementation notes to the issue (what changed, any deviations, and follow-ups).
