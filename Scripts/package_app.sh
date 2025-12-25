@@ -53,6 +53,15 @@ SPARKLE_FEED_URL="${SPARKLE_FEED_URL:-}"
 SPARKLE_PUBLIC_ED_KEY="${SPARKLE_PUBLIC_ED_KEY:-}"
 
 if [[ "$CONFIG" == "release" ]]; then
+  if [[ -z "$SIGNING_IDENTITY" ]]; then
+    echo "SIGNING_IDENTITY is required for release builds (Developer ID Application recommended)" >&2
+    exit 1
+  fi
+  if [[ "$SIGN_ADHOC" == "1" ]]; then
+    echo "SIGN_ADHOC must be 0 for release builds" >&2
+    exit 1
+  fi
+
   SPARKLE_FEED_URL="${SPARKLE_FEED_URL:-$DEFAULT_SPARKLE_FEED_URL}"
   if [[ -z "$SPARKLE_PUBLIC_ED_KEY" ]]; then
     echo "SPARKLE_PUBLIC_ED_KEY is not set (required for release builds)" >&2

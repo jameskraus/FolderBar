@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 import os
 import Sparkle
 
@@ -11,6 +12,7 @@ final class FolderBarUpdater: NSObject, ObservableObject {
     @Published private(set) var availableVersionString: String?
     @Published private(set) var lastCheckedAt: Date?
     @Published private(set) var lastError: String?
+    @Published private(set) var needsAppManagementPermission: Bool = false
 
     private lazy var sparkleController: SPUStandardUpdaterController = {
         SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: self, userDriverDelegate: nil)
@@ -40,6 +42,11 @@ final class FolderBarUpdater: NSObject, ObservableObject {
         sparkleController.checkForUpdates(nil)
     }
 
+    func openPrivacyAndSecuritySettings() {
+        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security") else { return }
+        NSWorkspace.shared.open(url)
+    }
+
     private var feedURL: URL? {
         guard let feedString = Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") as? String else {
             return nil
@@ -66,11 +73,53 @@ extension FolderBarUpdater: SPUUpdaterDelegate {
         }
     }
 
+    nonisolated func updater(_ updater: SPUUpdater, didAbortWithError error: any Error) {
+        handleSparkleError(error)
+    }
+
     nonisolated func updater(_ updater: SPUUpdater, didFinishUpdateCycleFor updateCheck: SPUUpdateCheck, error: (any Error)?) {
-        let errorDescription = error.map { String(describing: $0) }
         Task { @MainActor [weak self] in
             self?.lastCheckedAt = Date()
-            self?.lastError = errorDescription
+            if let error {
+                self?.applySparkleError(error)
+            } else {
+                self?.lastError = nil
+                self?.needsAppManagementPermission = false
+            }
         }
+    }
+
+    private nonisolated func handleSparkleError(_ error: any Error) {
+        Task { @MainActor [weak self] in
+            self?.lastCheckedAt = Date()
+            self?.applySparkleError(error)
+        }
+    }
+
+    @MainActor
+    private func applySparkleError(_ error: any Error) {
+        let nsError = error as NSError
+        lastError = Self.formatError(nsError)
+        needsAppManagementPermission = Self.isAppManagementWriteDenied(nsError)
+    }
+
+    private static func isAppManagementWriteDenied(_ error: NSError) -> Bool {
+        if error.domain == SUSparkleErrorDomain,
+           error.code == Int(SUError.installationWriteNoPermissionError.rawValue) {
+            return true
+        }
+        return false
+    }
+
+    private static func formatError(_ error: NSError) -> String {
+        var parts: [String] = [error.localizedDescription]
+        if let reason = error.localizedFailureReason, !reason.isEmpty {
+            parts.append(reason)
+        }
+        if let suggestion = error.localizedRecoverySuggestion, !suggestion.isEmpty {
+            parts.append(suggestion)
+        }
+        parts.append("(\(error.domain) \(error.code))")
+        return parts.joined(separator: " ")
     }
 }

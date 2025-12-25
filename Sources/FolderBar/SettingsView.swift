@@ -50,6 +50,21 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(updateStatusText)
                         .font(.system(size: 12, weight: .semibold))
+                    if updater.needsAppManagementPermission {
+                        Text("macOS blocked FolderBar from updating itself. Enable FolderBar in System Settings → Privacy & Security → App Management, then try again.")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        HStack {
+                            Button("Open Privacy & Security…") {
+                                updater.openPrivacyAndSecuritySettings()
+                            }
+                            .buttonStyle(.plain)
+
+                            Spacer()
+                        }
+                    }
                     if let lastCheckedText {
                         Text(lastCheckedText)
                             .font(.system(size: 11))
