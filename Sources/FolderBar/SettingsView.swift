@@ -11,114 +11,133 @@ struct SettingsView: View {
     @State private var showingResetAlert = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Download Location")
-                    .font(.system(size: 13, weight: .semibold))
-                HStack(alignment: .center, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(folderDisplayName)
-                            .font(.system(size: 12, weight: .semibold))
-                        Text(folderPathText)
-                            .font(.system(size: 11))
-                            .foregroundColor(.secondary)
-                            .lineLimit(2)
-                    }
-                    Spacer()
-                    Button("Change…", action: onChooseFolder)
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("App Icon")
-                    .font(.system(size: 13, weight: .semibold))
-                HStack(alignment: .center, spacing: 12) {
-                    Text("Default icon")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Button("Change Icon…") {}
-                        .disabled(true)
-                }
-            }
-
-            Divider()
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Updates")
-                    .font(.system(size: 13, weight: .semibold))
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(updateStatusText)
-                        .font(.system(size: 12, weight: .semibold))
-                    if updater.needsAppManagementPermission {
-                        Text("macOS blocked FolderBar from updating itself. Enable FolderBar in System Settings → Privacy & Security → App Management, then try again.")
-                            .font(.system(size: 11))
-                            .foregroundColor(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        HStack {
-                            Button("Open Privacy & Security…") {
-                                updater.openPrivacyAndSecuritySettings()
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    GroupBox(
+                        label: Text("Downloads")
+                            .font(.system(size: 13, weight: .semibold))
+                    ) {
+                        HStack(alignment: .firstTextBaseline, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(folderDisplayName)
+                                    .font(.system(size: 12, weight: .semibold))
+                                Text(folderPathText)
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(2)
                             }
-                            .buttonStyle(.plain)
-
-                            Spacer()
+                            Spacer(minLength: 12)
+                            Button("Change…", action: onChooseFolder)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 2)
                     }
-                    if let lastCheckedText {
-                        Text(lastCheckedText)
-                            .font(.system(size: 11))
-                            .foregroundColor(.secondary)
-                    }
-                    if let errorText {
-                        Text(errorText)
-                            .font(.system(size: 11))
-                            .foregroundColor(.secondary)
-                            .lineLimit(2)
-                    }
-                }
 
-                HStack {
-                    Spacer()
-                    Button("Update…") {
-                        updater.userInitiatedUpdate()
+                    GroupBox(
+                        label: Text("App Icon")
+                            .font(.system(size: 13, weight: .semibold))
+                    ) {
+                        HStack(alignment: .firstTextBaseline, spacing: 16) {
+                            Text("Default icon")
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                            Spacer(minLength: 12)
+                            Button("Change Icon…") {}
+                                .disabled(true)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 2)
                     }
-                    .disabled(!updater.isEnabled)
+
+                    GroupBox(
+                        label: Text("Updates")
+                            .font(.system(size: 13, weight: .semibold))
+                    ) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack(alignment: .firstTextBaseline, spacing: 16) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(updateStatusText)
+                                        .font(.system(size: 12, weight: .semibold))
+                                    if let lastCheckedText {
+                                        Text(lastCheckedText)
+                                            .font(.system(size: 11))
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+
+                                Spacer(minLength: 12)
+
+                                Button("Update…") {
+                                    updater.userInitiatedUpdate()
+                                }
+                                .disabled(!updater.isEnabled)
+                            }
+
+                            if updater.needsAppManagementPermission {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("macOS blocked FolderBar from updating itself. Enable FolderBar in System Settings → Privacy & Security → App Management, then try again.")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(.secondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+
+                                    Button("Open Privacy & Security…") {
+                                        updater.openPrivacyAndSecuritySettings()
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+
+                            if let errorText {
+                                Text(errorText)
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(3)
+                            }
+                        }
+                        .padding(.top, 2)
+                    }
+
+                    GroupBox(
+                        label: Text("About")
+                            .font(.system(size: 13, weight: .semibold))
+                    ) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("FolderBar Version \(appVersion)")
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                            if let appSigningSummary {
+                                Text(appSigningSummary)
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 2)
+                    }
                 }
+                .padding(20)
             }
 
             Divider()
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text("About")
-                    .font(.system(size: 13, weight: .semibold))
-                Text("FolderBar Version \(appVersion)")
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
-                if let appSigningSummary {
-                    Text(appSigningSummary)
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                        .lineLimit(2)
-                }
+            HStack {
+                Button(
+                    action: { showingResetAlert = true },
+                    label: {
+                        Text("Reset All Settings")
+                            .foregroundColor(.red)
+                    }
+                )
+                .buttonStyle(DefaultButtonStyle())
+
+                Spacer()
             }
-
-            Spacer()
-
-            Button(
-                action: { showingResetAlert = true },
-                label: {
-                    Text("Reset All Settings")
-                        .foregroundColor(.red)
-                }
-            )
-            .buttonStyle(DefaultButtonStyle())
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 28)
-        .padding(.bottom, 28)
-        .frame(minWidth: 360, minHeight: 300)
+        .frame(minWidth: 460, minHeight: 420)
         .alert(isPresented: $showingResetAlert) {
             Alert(
                 title: Text("Reset All Settings?"),
