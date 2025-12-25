@@ -1,5 +1,25 @@
 import Foundation
 
+protocol SymbolCatalogLoading: Sendable {
+    func loadSymbolNames() -> [String]
+}
+
+struct SystemSymbolCatalog: SymbolCatalogLoading {
+    func loadSymbolNames() -> [String] {
+        SFSymbolCatalog.loadSymbolNames()
+    }
+}
+
+protocol Sleeper: Sendable {
+    func sleep(nanoseconds: UInt64) async
+}
+
+struct TaskSleeper: Sleeper {
+    func sleep(nanoseconds: UInt64) async {
+        try? await Task.sleep(nanoseconds: nanoseconds)
+    }
+}
+
 @MainActor
 final class IconPickerModel: ObservableObject {
     @Published var filterText: String = "" {
@@ -12,14 +32,29 @@ final class IconPickerModel: ObservableObject {
     private var allSymbolNamesLowercased: [String] = []
     private var filterTask: Task<Void, Never>?
 
+    private let catalog: any SymbolCatalogLoading
+    private let sleeper: any Sleeper
+    private let debounceNanos: UInt64
+
+    init(
+        catalog: any SymbolCatalogLoading = SystemSymbolCatalog(),
+        sleeper: any Sleeper = TaskSleeper(),
+        debounceNanos: UInt64 = 150_000_000
+    ) {
+        self.catalog = catalog
+        self.sleeper = sleeper
+        self.debounceNanos = debounceNanos
+    }
+
     func loadIfNeeded() {
         guard allSymbolNames.isEmpty else { return }
 
         filterTask?.cancel()
         isLoading = true
         Task { @MainActor in
+            let catalog = catalog
             let loaded = await Task.detached(priority: .userInitiated) {
-                SFSymbolCatalog.loadSymbolNames()
+                catalog.loadSymbolNames()
             }.value
 
             allSymbolNames = loaded
@@ -41,7 +76,7 @@ final class IconPickerModel: ObservableObject {
     private func scheduleFilterUpdate() {
         filterTask?.cancel()
         filterTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 150_000_000)
+            await sleeper.sleep(nanoseconds: debounceNanos)
             if Task.isCancelled { return }
 
             if isLoading { return }

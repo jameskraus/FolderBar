@@ -13,6 +13,10 @@ let package = Package(
             name: "FolderBarCore",
             targets: ["FolderBarCore"]
         ),
+        .library(
+            name: "FolderBarApp",
+            targets: ["FolderBarApp"]
+        ),
         .executable(
             name: "FolderBar",
             targets: ["FolderBar"]
@@ -25,11 +29,17 @@ let package = Package(
         .target(
             name: "FolderBarCore"
         ),
-        .executableTarget(
-            name: "FolderBar",
+        .target(
+            name: "FolderBarApp",
             dependencies: [
                 "FolderBarCore",
                 .product(name: "Sparkle", package: "Sparkle")
+            ]
+        ),
+        .executableTarget(
+            name: "FolderBar",
+            dependencies: [
+                "FolderBarApp"
             ],
             linkerSettings: [
                 .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])
@@ -38,6 +48,10 @@ let package = Package(
         .testTarget(
             name: "FolderBarTests",
             dependencies: ["FolderBarCore"]
+        ),
+        .testTarget(
+            name: "FolderBarAppTests",
+            dependencies: ["FolderBarApp"]
         )
     ]
 )
