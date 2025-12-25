@@ -4,12 +4,7 @@ struct IconPickerView: View {
     @ObservedObject var iconSettings: StatusItemIconSettings
 
     @Environment(\.presentationMode) private var presentationMode
-    @State private var filterText = ""
-    @State private var symbolNames: [String] = []
-    @State private var symbolNamesLowercased: [String] = []
-    @State private var displayedSymbolNames: [String] = []
-    @State private var isLoading = true
-    @State private var pendingFilterWorkItem: DispatchWorkItem?
+    @StateObject private var model = IconPickerModel()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -23,21 +18,7 @@ struct IconPickerView: View {
         }
         .frame(width: 560, height: 640)
         .onAppear {
-            guard symbolNames.isEmpty else { return }
-            isLoading = true
-            DispatchQueue.global(qos: .userInitiated).async {
-                let loaded = SFSymbolCatalog.loadSymbolNames()
-                let lowered = loaded.map { $0.lowercased() }
-                DispatchQueue.main.async {
-                    symbolNames = loaded
-                    symbolNamesLowercased = lowered
-                    displayedSymbolNames = loaded
-                    isLoading = false
-                }
-            }
-        }
-        .onChange(of: filterText) { _ in
-            scheduleFilterUpdate()
+            model.loadIfNeeded()
         }
     }
 
@@ -68,17 +49,17 @@ struct IconPickerView: View {
     private var content: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
-                TextField("Filter icons…", text: $filterText)
+                TextField("Filter icons…", text: $model.filterText)
                     .textFieldStyle(.roundedBorder)
                     .frame(maxWidth: 280)
 
                 Spacer()
 
-                if isLoading {
+                if model.isLoading {
                     ProgressView()
                         .controlSize(.small)
                 } else {
-                    Text("\(displayedSymbolNames.count) icons")
+                    Text("\(model.displayedSymbolNames.count) icons")
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                 }
@@ -87,17 +68,17 @@ struct IconPickerView: View {
             .padding(.top, 14)
 
             ScrollView {
-                if isLoading {
+                if model.isLoading {
                     EmptyView()
-                } else if displayedSymbolNames.isEmpty {
-                    Text(symbolNames.isEmpty ? "No symbols available." : "No results.")
+                } else if model.displayedSymbolNames.isEmpty {
+                    Text("No results.")
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(40)
                 } else {
                     LazyVGrid(columns: Self.columns, spacing: 10) {
-                        ForEach(displayedSymbolNames, id: \.self) { symbolName in
+                        ForEach(model.displayedSymbolNames, id: \.self) { symbolName in
                             IconCell(
                                 symbolName: symbolName,
                                 isSelected: symbolName == iconSettings.resolvedSymbolName
@@ -110,35 +91,6 @@ struct IconPickerView: View {
                 }
             }
         }
-    }
-
-    private func scheduleFilterUpdate() {
-        pendingFilterWorkItem?.cancel()
-
-        let filter = filterText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let currentSymbols = symbolNames
-        let currentLowered = symbolNamesLowercased
-
-        if filter.isEmpty {
-            displayedSymbolNames = currentSymbols
-            return
-        }
-
-        let workItem = DispatchWorkItem { [filter] in
-            var results: [String] = []
-            results.reserveCapacity(512)
-            for (name, lowered) in zip(currentSymbols, currentLowered) {
-                if lowered.contains(filter) {
-                    results.append(name)
-                }
-            }
-            DispatchQueue.main.async {
-                displayedSymbolNames = results
-            }
-        }
-
-        pendingFilterWorkItem = workItem
-        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 0.15, execute: workItem)
     }
 
     private static let columns: [GridItem] = [
