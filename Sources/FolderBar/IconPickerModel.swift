@@ -15,6 +15,7 @@ final class IconPickerModel: ObservableObject {
     func loadIfNeeded() {
         guard allSymbolNames.isEmpty else { return }
 
+        filterTask?.cancel()
         isLoading = true
         Task { @MainActor in
             let loaded = await Task.detached(priority: .userInitiated) {
@@ -38,14 +39,16 @@ final class IconPickerModel: ObservableObject {
     }
 
     private func scheduleFilterUpdate() {
-        let filter = filterText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let symbols = allSymbolNames
-        let lowered = allSymbolNamesLowercased
-
         filterTask?.cancel()
         filterTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: 150_000_000)
             if Task.isCancelled { return }
+
+            if isLoading { return }
+
+            let filter = filterText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            let symbols = allSymbolNames
+            let lowered = allSymbolNamesLowercased
 
             if filter.isEmpty {
                 displayedSymbolNames = symbols
