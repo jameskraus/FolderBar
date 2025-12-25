@@ -7,7 +7,7 @@ CONFIG="${1:-${CONFIG:-debug}}"
 OUTPUT_DIR="${OUTPUT_DIR:-$ROOT_DIR/build}"
 PACKAGE_SCRIPT="$ROOT_DIR/Scripts/package_app.sh"
 ENV_FILES=("$ROOT_DIR/.env" "$ROOT_DIR/.env.local")
-BUNDLE_ID="${BUNDLE_ID-}"
+BUNDLE_ID="${BUNDLE_ID:-com.folderbar.app}"
 
 cd "$ROOT_DIR"
 
@@ -17,14 +17,6 @@ for env_file in "${ENV_FILES[@]}"; do
     source "$env_file"
   fi
 done
-
-if [[ -z "${BUNDLE_ID}" ]]; then
-  if [[ "$CONFIG" == "debug" ]]; then
-    BUNDLE_ID="com.folderbar.app.debug"
-  else
-    BUNDLE_ID="com.folderbar.app"
-  fi
-fi
 
 APP_DIR="$OUTPUT_DIR/$APP_NAME.app"
 

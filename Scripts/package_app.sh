@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="FolderBar"
 CONFIG="${1:-${CONFIG:-debug}}"
 OUTPUT_DIR="${OUTPUT_DIR:-$ROOT_DIR/build}"
-BUNDLE_ID="${BUNDLE_ID-}"
+BUNDLE_ID="${BUNDLE_ID:-com.folderbar.app}"
 ICON_NAME="AppIcon"
 ICON_SOURCE_DIR="$ROOT_DIR/Assets/AppIcon.icon"
 ICON_SOURCE_PNG="$ICON_SOURCE_DIR/Assets/FolderBar.png"
@@ -30,14 +30,6 @@ for env_file in "${ENV_FILES[@]}"; do
     source "$env_file"
   fi
 done
-
-if [[ -z "${BUNDLE_ID}" ]]; then
-  if [[ "$CONFIG" == "debug" ]]; then
-    BUNDLE_ID="com.folderbar.app.debug"
-  else
-    BUNDLE_ID="com.folderbar.app"
-  fi
-fi
 
 if [[ -n "$SIGNING_IDENTITY_ENV_SET" ]]; then
   SIGNING_IDENTITY="$SIGNING_IDENTITY_ENV_VALUE"
