@@ -30,20 +30,28 @@ swift build
 
 FolderBar runs as a packaged `.app` (Sparkle and signing behave differently outside a real bundle).
 
-### Quick run (no signing)
+### Default run (no setup)
 
-If you want the lowest-friction run (no signing identity required):
+This is the highest-utility development command (builds `build/FolderBar.app` and relaunches it):
 
 ```bash
-SIGN_ADHOC=0 ./Scripts/compile_and_run.sh
+./Scripts/compile_and_run.sh
 ```
 
-### Recommended run (signed)
+By default, the packaging step will **ad-hoc sign** the app if no signing identity is configured. This avoids needing any certificates and keeps the command zero-config for new checkouts.
 
-If you want behavior closest to release builds (fewer permission prompts, Sparkle closer to “real”):
+### Recommended dev signing (configure once)
+
+For behavior closest to release builds (fewer permission prompts and consistent identity), set a signing identity once in `.env.local`:
 
 ```bash
-SIGNING_IDENTITY="Apple Development: Your Name (TEAMID)" ./Scripts/compile_and_run.sh
+SIGNING_IDENTITY="Apple Development: Your Name (TEAMID)"
+```
+
+To skip signing entirely, set:
+
+```bash
+SIGN_ADHOC=0
 ```
 
 ## Lint / Format
