@@ -26,13 +26,17 @@ Menu bar app for surfacing folders and their contents.
 swift build
 ```
 
-## Run
+## Run (fast, from source)
 
 ```bash
 swift run FolderBar
 ```
 
-## Dev loop (package + relaunch)
+Note: when running from source (not a `.app` bundle), Sparkle updates are disabled.
+
+## Dev loop (recommended)
+
+Builds a real `.app` bundle in `build/` (matches production behavior more closely) and relaunches it:
 
 ```bash
 ./Scripts/compile_and_run.sh
@@ -54,33 +58,25 @@ make lint
 ./Scripts/package_app.sh
 ```
 
-## Local code signing (optional)
+## Local code signing (optional, but recommended)
 
-`Scripts/package_app.sh` supports optional signing to reduce local permission prompts.
+`Scripts/package_app.sh` supports signing to reduce local permission prompts and to behave more like production.
 
 ```bash
-# Use a Developer ID or local signing identity
-SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)" ./Scripts/package_app.sh
-
-# Or force ad-hoc signing (default when SIGNING_IDENTITY is unset)
-SIGN_ADHOC=1 ./Scripts/package_app.sh
-
-# Skip signing entirely
-SIGN_ADHOC=0 ./Scripts/package_app.sh
+SIGNING_IDENTITY="Apple Development: Your Name (TEAMID)" ./Scripts/package_app.sh
 ```
 
-You can also set a local signing identity once in `.env.local` (ignored by git):
+You can set a default identity once in `.env.local` (ignored by git):
 
 ```bash
 SIGNING_IDENTITY="Apple Development: Your Name (TEAMID)"
-SIGN_ADHOC=1
 ```
 
 Both `Scripts/package_app.sh` and `Scripts/compile_and_run.sh` will source `.env` and `.env.local` automatically (local overrides).
 
-## Release (signed + notarized)
+## Release (signed + notarized + published)
 
-Create a `.env` file with release signing + notarization values:
+Create a `.env` file with release signing + notarization values, and set `SPARKLE_PUBLIC_ED_KEY` in `.env.local`:
 
 ```bash
 RELEASE_SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)"
@@ -95,9 +91,18 @@ Then run:
 ./Scripts/release.sh
 ```
 
-Release outputs:
+This produces + publishes:
 - `build/FolderBar-<version>.zip`
 - `build/FolderBar-<version>.dmg`
+- Git tag `v<version>`
+- GitHub Release assets
+- `appcast.xml` update committed to `main`
+
+Build-only (no tag/GitHub/appcast changes):
+
+```bash
+SKIP_PUBLISH=1 ./Scripts/release.sh
+```
 
 ## Updates (Sparkle)
 
@@ -112,7 +117,7 @@ FolderBar uses Sparkle for auto-updates via an appcast hosted in this repo:
 Sparkle updates are signed with an Ed25519 keypair:
 
 - `SUPublicEDKey` (public key) is embedded in the app’s `Info.plist` at packaging time.
-- The private key must never be committed (store it locally or as a CI secret).
+- The private key must never be committed (stored in your Keychain by default).
 
 One-time key generation (requires Sparkle tools):
 
@@ -131,14 +136,17 @@ Add the public key (base64) to `.env.local`:
 
 ```bash
 SPARKLE_PUBLIC_ED_KEY="BASE64_PUBLIC_KEY_FROM_GENERATE_KEYS"
-SPARKLE_FEED_URL="https://raw.githubusercontent.com/jameskraus/FolderBar/main/appcast.xml"
 ```
 
-Store the private key securely and set its path in `.env.local` (name used by release automation):
+Optional (CI / non-interactive signing): export the private key to a file and set its path in `.env.local`:
 
 ```bash
 SPARKLE_ED_PRIVATE_KEY_FILE="/absolute/path/to/ed25519_private_key"
 ```
+
+### Troubleshooting
+
+If Sparkle shows an update error and macOS says FolderBar was prevented from modifying apps, enable FolderBar in **System Settings → Privacy & Security → App Management**, then retry the update.
 
 To list available identities:
 
