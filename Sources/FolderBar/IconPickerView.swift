@@ -71,7 +71,7 @@ struct IconPickerView: View {
                 if model.isLoading {
                     EmptyView()
                 } else if model.displayedSymbolNames.isEmpty {
-                    Text("No results.")
+                    Text(model.filterText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "No symbols available." : "No results.")
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                         .frame(maxWidth: .infinity, alignment: .center)

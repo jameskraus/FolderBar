@@ -23,8 +23,8 @@ final class IconPickerModel: ObservableObject {
 
             allSymbolNames = loaded
             allSymbolNamesLowercased = loaded.map { $0.lowercased() }
-            isLoading = false
             applyFilterImmediately()
+            isLoading = false
         }
     }
 
