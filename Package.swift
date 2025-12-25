@@ -30,6 +30,9 @@ let package = Package(
             dependencies: [
                 "FolderBarCore",
                 .product(name: "Sparkle", package: "Sparkle")
+            ],
+            linkerSettings: [
+                .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])
             ]
         ),
         .testTarget(
