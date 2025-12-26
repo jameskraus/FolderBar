@@ -55,11 +55,6 @@ struct SettingsView: View {
                                 Button("Choose…") {
                                     showingIconPicker = true
                                 }
-
-                                Button("Reset") {
-                                    iconSettings.resetToDefault()
-                                }
-                                .controlSize(.small)
                             }
 
                             if !iconSettings.isValidSymbol {
