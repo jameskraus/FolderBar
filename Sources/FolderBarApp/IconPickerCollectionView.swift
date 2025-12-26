@@ -142,7 +142,7 @@ private final class IconCollectionViewItem: NSCollectionViewItem {
             checkmarkImageView.topAnchor.constraint(equalTo: view.topAnchor, constant: 6),
             checkmarkImageView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -6),
             checkmarkImageView.widthAnchor.constraint(equalToConstant: 12),
-            checkmarkImageView.heightAnchor.constraint(equalToConstant: 12),
+            checkmarkImageView.heightAnchor.constraint(equalToConstant: 12)
         ])
 
         updateSelectionAppearance()
