@@ -45,6 +45,13 @@ When closing a bead, add brief implementation notes to the issue (what changed, 
 
 **When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
 
+### QA sign-off gate (when requested)
+
+If the user requests QA/sign-off before commits or pushing:
+- Do not update beads, commit, or push until the user explicitly confirms QA.
+- Keep changes local and provide `git diff`/paths so the user can review.
+- After sign-off, proceed with the normal “Landing the Plane” checklist.
+
 **MANDATORY WORKFLOW:**
 
 1. **File issues for remaining work** - Create issues for anything that needs follow-up

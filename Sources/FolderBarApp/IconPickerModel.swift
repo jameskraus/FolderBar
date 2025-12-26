@@ -26,6 +26,7 @@ final class IconPickerModel: ObservableObject {
         didSet { scheduleFilterUpdate() }
     }
     @Published private(set) var displayedSymbolNames: [String] = []
+    @Published private(set) var displayedSymbolNamesRevision: Int = 0
     @Published private(set) var isLoading = true
 
     private var allSymbolNames: [String] = []
@@ -67,9 +68,9 @@ final class IconPickerModel: ObservableObject {
     private func applyFilterImmediately() {
         let filter = filterText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         if filter.isEmpty {
-            displayedSymbolNames = allSymbolNames
+            updateDisplayedSymbolNames(allSymbolNames)
         } else {
-            displayedSymbolNames = Self.filteredSymbols(filter: filter, symbols: allSymbolNames, lowered: allSymbolNamesLowercased)
+            updateDisplayedSymbolNames(Self.filteredSymbols(filter: filter, symbols: allSymbolNames, lowered: allSymbolNamesLowercased))
         }
     }
 
@@ -86,7 +87,7 @@ final class IconPickerModel: ObservableObject {
             let lowered = allSymbolNamesLowercased
 
             if filter.isEmpty {
-                displayedSymbolNames = symbols
+                updateDisplayedSymbolNames(symbols)
                 return
             }
 
@@ -95,8 +96,13 @@ final class IconPickerModel: ObservableObject {
             }.value
 
             if Task.isCancelled { return }
-            displayedSymbolNames = results
+            updateDisplayedSymbolNames(results)
         }
+    }
+
+    private func updateDisplayedSymbolNames(_ newValue: [String]) {
+        displayedSymbolNames = newValue
+        displayedSymbolNamesRevision &+= 1
     }
 
     nonisolated private static func filteredSymbols(filter: String, symbols: [String], lowered: [String]) -> [String] {

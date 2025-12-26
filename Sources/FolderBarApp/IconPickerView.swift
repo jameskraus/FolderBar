@@ -9,8 +9,8 @@ struct IconPickerView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-                .padding(.horizontal, 20)
-                .padding(.vertical, 14)
+                .padding(.horizontal, IconPickerLayout.horizontalPadding)
+                .padding(.vertical, IconPickerLayout.headerVerticalPadding)
 
             Divider()
 
@@ -47,138 +47,107 @@ struct IconPickerView: View {
     }
 
     private var content: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                TextField("Filter icons…", text: $model.filterText)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(maxWidth: 280)
+        IconPickerBody(
+            filterText: $model.filterText,
+            isLoading: model.isLoading,
+            displayedCount: model.displayedSymbolNames.count,
+            gridState: gridState
+        )
+    }
 
-                Spacer()
+    private var gridState: IconPickerBody.GridState {
+        if model.isLoading {
+            return .loading
+        }
 
-                if model.isLoading {
-                    ProgressView()
-                        .controlSize(.small)
-                } else {
-                    Text("\(model.displayedSymbolNames.count) icons")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 14)
+        let trimmedFilter = model.filterText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if model.displayedSymbolNames.isEmpty {
+            return .empty(message: trimmedFilter.isEmpty ? "No symbols available." : "No results.")
+        }
 
-            ScrollView {
-                if model.isLoading {
-                    EmptyView()
-                } else if model.displayedSymbolNames.isEmpty {
-                    Text(model.filterText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "No symbols available." : "No results.")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(40)
-                } else {
-                    let selectedSymbolName = iconSettings.resolvedSymbolName
-                    IconGrid(
-                        symbols: model.displayedSymbolNames,
-                        selectedSymbolName: selectedSymbolName
-                    ) { symbolName in
-                        iconSettings.symbolName = symbolName
-                    }
-                    .transaction { $0.animation = nil }
-                }
-            }
+        return .symbols(
+            model.displayedSymbolNames,
+            revision: model.displayedSymbolNamesRevision,
+            selectedSymbolName: iconSettings.resolvedSymbolName
+        ) { symbolName in
+            iconSettings.symbolName = symbolName
         }
     }
 }
 
-private struct IconGrid: View {
-    let symbols: [String]
-    let selectedSymbolName: String
-    let onSelect: (String) -> Void
+private enum IconPickerLayout {
+    static let horizontalPadding: CGFloat = 20
+    static let bodyTopPadding: CGFloat = 14
+    static let headerVerticalPadding: CGFloat = 14
+    static let sectionSpacing: CGFloat = 12
+    static let emptyStatePadding: CGFloat = 40
+}
 
-    private static let columnCount = 9
-    private static let cellSize: CGFloat = 44
-    private static let cellSpacing: CGFloat = 10
-    private static let contentPadding: CGFloat = 20
+private struct IconPickerBody: View {
+    @Binding var filterText: String
+    let isLoading: Bool
+    let displayedCount: Int
+    let gridState: GridState
 
     var body: some View {
-        let rows = (symbols.count + Self.columnCount - 1) / Self.columnCount
+        VStack(alignment: .leading, spacing: IconPickerLayout.sectionSpacing) {
+            filterBar
+            gridRegion
+        }
+        .padding(.horizontal, IconPickerLayout.horizontalPadding)
+        .padding(.top, IconPickerLayout.bodyTopPadding)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
 
-        LazyVStack(spacing: Self.cellSpacing) {
-            ForEach(0..<rows, id: \.self) { row in
-                IconGridRow(
+    private var filterBar: some View {
+        HStack(spacing: 12) {
+            TextField("Filter icons…", text: $filterText)
+                .textFieldStyle(.roundedBorder)
+                .frame(maxWidth: 280)
+
+            Spacer()
+
+            if isLoading {
+                ProgressView()
+                    .controlSize(.small)
+            } else {
+                Text("\(displayedCount) icons")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+
+    private var gridRegion: some View {
+        ZStack {
+            switch gridState {
+            case .loading:
+                ProgressView()
+                    .controlSize(.regular)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+
+            case let .empty(message):
+                Text(message)
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .padding(IconPickerLayout.emptyStatePadding)
+
+            case let .symbols(symbols, revision, selectedSymbolName, onSelect):
+                IconPickerCollectionView(
                     symbols: symbols,
+                    symbolsRevision: revision,
                     selectedSymbolName: selectedSymbolName,
-                    rowIndex: row,
                     onSelect: onSelect
                 )
             }
         }
-        .padding(Self.contentPadding)
-        .animation(nil, value: symbols)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private struct IconGridRow: View {
-        let symbols: [String]
-        let selectedSymbolName: String
-        let rowIndex: Int
-        let onSelect: (String) -> Void
-
-        var body: some View {
-            HStack(spacing: IconGrid.cellSpacing) {
-                ForEach(0..<IconGrid.columnCount, id: \.self) { column in
-                    let index = rowIndex * IconGrid.columnCount + column
-                    if index < symbols.count {
-                        let symbolName = symbols[index]
-                        IconCell(
-                            symbolName: symbolName,
-                            isSelected: symbolName == selectedSymbolName
-                        ) {
-                            onSelect(symbolName)
-                        }
-                    } else {
-                        Color.clear
-                            .frame(width: IconGrid.cellSize, height: IconGrid.cellSize)
-                    }
-                }
-            }
-        }
-    }
-}
-
-private struct IconCell: View {
-    let symbolName: String
-    let isSelected: Bool
-    let onSelect: () -> Void
-
-    var body: some View {
-        Button(action: onSelect) {
-            ZStack(alignment: .topTrailing) {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(isSelected ? Color.accentColor.opacity(0.18) : Color(NSColor.controlBackgroundColor).opacity(0.2))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(isSelected ? Color.accentColor.opacity(0.6) : Color(NSColor.separatorColor).opacity(0.25), lineWidth: 1)
-                    )
-
-                Image(systemName: symbolName)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.primary)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.accentColor)
-                        .padding(6)
-                }
-            }
-            .frame(width: 44, height: 44)
-        }
-        .buttonStyle(.plain)
-        .focusable(false)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(symbolName))
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    enum GridState {
+        case loading
+        case empty(message: String)
+        case symbols([String], revision: Int, selectedSymbolName: String, onSelect: (String) -> Void)
     }
 }
