@@ -1,4 +1,5 @@
 import AppKit
+import os
 import SwiftUI
 
 @MainActor
@@ -183,23 +184,37 @@ private final class SymbolImageCache {
 
     private let cache = NSCache<NSString, NSImage>()
     let checkmarkImage: NSImage?
+    private let iconSymbolConfiguration: NSImage.SymbolConfiguration
+    private let log: OSLog
 
     private init() {
-        cache.countLimit = 512
+        cache.countLimit = 2048
+        iconSymbolConfiguration = NSImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
+        log = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "FolderBar", category: "IconPicker")
         checkmarkImage = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: nil)
     }
 
     func image(for symbolName: String) -> NSImage? {
         if let cached = cache.object(forKey: symbolName as NSString) {
+            signpost(event: "symbol_cache_hit", symbolName: symbolName)
             return cached
         }
 
         guard let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) else {
+            signpost(event: "symbol_cache_miss_invalid", symbolName: symbolName)
             return nil
         }
 
-        image.isTemplate = true
-        cache.setObject(image, forKey: symbolName as NSString)
-        return image
+        let configured = image.withSymbolConfiguration(iconSymbolConfiguration) ?? image
+        configured.isTemplate = true
+        cache.setObject(configured, forKey: symbolName as NSString)
+        signpost(event: "symbol_cache_miss", symbolName: symbolName)
+        return configured
+    }
+
+    private func signpost(event: StaticString, symbolName: String) {
+        #if DEBUG
+            os_signpost(.event, log: log, name: event, "%{public}s", symbolName)
+        #endif
     }
 }
