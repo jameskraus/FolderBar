@@ -78,33 +78,72 @@ struct IconPickerView: View {
                         .padding(40)
                 } else {
                     let selectedSymbolName = iconSettings.resolvedSymbolName
-                    LazyVGrid(columns: Self.columns, spacing: 10) {
-                        ForEach(model.displayedSymbolNames, id: \.self) { symbolName in
-                            IconCell(
-                                symbolName: symbolName,
-                                isSelected: symbolName == selectedSymbolName
-                            ) {
-                                iconSettings.symbolName = symbolName
-                            }
-                        }
+                    IconGrid(
+                        symbols: model.displayedSymbolNames,
+                        selectedSymbolName: selectedSymbolName
+                    ) { symbolName in
+                        iconSettings.symbolName = symbolName
                     }
-                    .padding(20)
+                    .transaction { $0.animation = nil }
                 }
             }
         }
     }
+}
 
-    private static let columns: [GridItem] = [
-        GridItem(.fixed(44), spacing: 10, alignment: .center),
-        GridItem(.fixed(44), spacing: 10, alignment: .center),
-        GridItem(.fixed(44), spacing: 10, alignment: .center),
-        GridItem(.fixed(44), spacing: 10, alignment: .center),
-        GridItem(.fixed(44), spacing: 10, alignment: .center),
-        GridItem(.fixed(44), spacing: 10, alignment: .center),
-        GridItem(.fixed(44), spacing: 10, alignment: .center),
-        GridItem(.fixed(44), spacing: 10, alignment: .center),
-        GridItem(.fixed(44), spacing: 10, alignment: .center)
-    ]
+private struct IconGrid: View {
+    let symbols: [String]
+    let selectedSymbolName: String
+    let onSelect: (String) -> Void
+
+    private static let columnCount = 9
+    private static let cellSize: CGFloat = 44
+    private static let cellSpacing: CGFloat = 10
+    private static let contentPadding: CGFloat = 20
+
+    var body: some View {
+        let rows = (symbols.count + Self.columnCount - 1) / Self.columnCount
+
+        LazyVStack(spacing: Self.cellSpacing) {
+            ForEach(0..<rows, id: \.self) { row in
+                IconGridRow(
+                    symbols: symbols,
+                    selectedSymbolName: selectedSymbolName,
+                    rowIndex: row,
+                    onSelect: onSelect
+                )
+            }
+        }
+        .padding(Self.contentPadding)
+        .animation(nil, value: symbols)
+    }
+
+    private struct IconGridRow: View {
+        let symbols: [String]
+        let selectedSymbolName: String
+        let rowIndex: Int
+        let onSelect: (String) -> Void
+
+        var body: some View {
+            HStack(spacing: IconGrid.cellSpacing) {
+                ForEach(0..<IconGrid.columnCount, id: \.self) { column in
+                    let index = rowIndex * IconGrid.columnCount + column
+                    if index < symbols.count {
+                        let symbolName = symbols[index]
+                        IconCell(
+                            symbolName: symbolName,
+                            isSelected: symbolName == selectedSymbolName
+                        ) {
+                            onSelect(symbolName)
+                        }
+                    } else {
+                        Color.clear
+                            .frame(width: IconGrid.cellSize, height: IconGrid.cellSize)
+                    }
+                }
+            }
+        }
+    }
 }
 
 private struct IconCell: View {
