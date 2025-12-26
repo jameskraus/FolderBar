@@ -176,5 +176,9 @@ private struct IconCell: View {
             .frame(width: 44, height: 44)
         }
         .buttonStyle(.plain)
+        .focusable(false)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(symbolName))
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }
