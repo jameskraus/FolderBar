@@ -45,7 +45,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         self.viewModel = viewModel
         self.updater = updater
         self.iconSettings = iconSettings
-        self.appSigningSummary = AppSigningInfo.warningSummary()
+        appSigningSummary = AppSigningInfo.warningSummary()
         super.init()
     }
 

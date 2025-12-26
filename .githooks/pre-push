@@ -4,15 +4,42 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
-if [[ "${SKIP_SWIFTLINT:-}" == "1" || "${FOLDERBAR_SKIP_LINT:-}" == "1" ]]; then
+skip_swiftlint=0
+skip_swiftformat=0
+
+if [[ "${FOLDERBAR_SKIP_LINT:-}" == "1" ]]; then
+  skip_swiftlint=1
+  skip_swiftformat=1
+fi
+
+if [[ "${SKIP_SWIFTLINT:-}" == "1" ]]; then
+  skip_swiftlint=1
+fi
+
+if [[ "${SKIP_SWIFTFORMAT:-}" == "1" || "${FOLDERBAR_SKIP_FORMAT:-}" == "1" ]]; then
+  skip_swiftformat=1
+fi
+
+if [[ "$skip_swiftlint" == "1" && "$skip_swiftformat" == "1" ]]; then
   exit 0
 fi
 
-if ! command -v swiftlint >/dev/null 2>&1; then
+if [[ "$skip_swiftformat" == "0" ]] && ! command -v swiftformat >/dev/null 2>&1; then
+  echo "SwiftFormat is required for pre-push format checks but was not found on PATH." >&2
+  echo "Install: brew install swiftformat" >&2
+  echo "Skip once: SKIP_SWIFTFORMAT=1 git push (or git push --no-verify)" >&2
+  exit 1
+fi
+
+if [[ "$skip_swiftlint" == "0" ]] && ! command -v swiftlint >/dev/null 2>&1; then
   echo "SwiftLint is required for pre-push linting but was not found on PATH." >&2
   echo "Install: brew install swiftlint" >&2
   echo "Skip once: SKIP_SWIFTLINT=1 git push (or git push --no-verify)" >&2
   exit 1
+fi
+
+if [[ "$skip_swiftformat" == "0" ]]; then
+  swiftformat --lint .
 fi
 
 EMPTY_TREE="$(git hash-object -t tree /dev/null)"
@@ -44,8 +71,10 @@ else
     base_sha="$(git merge-base HEAD "$upstream")"
     git diff --name-only "$base_sha" HEAD -- '*.swift' >>"$tmpfile" || true
   else
-    swiftlint lint --strict --config "$ROOT/.swiftlint.yml" --quiet --working-directory "$ROOT"
-    exit $?
+    if [[ "$skip_swiftlint" == "0" ]]; then
+      swiftlint lint --strict --config "$ROOT/.swiftlint.yml" --quiet --working-directory "$ROOT"
+    fi
+    exit 0
   fi
 fi
 
@@ -55,8 +84,10 @@ fi
 
 count="$(sort -u "$tmpfile" | wc -l | tr -d ' ')"
 if [[ "$count" -gt 200 ]]; then
-  swiftlint lint --strict --config "$ROOT/.swiftlint.yml" --quiet --working-directory "$ROOT"
-  exit $?
+  if [[ "$skip_swiftlint" == "0" ]]; then
+    swiftlint lint --strict --config "$ROOT/.swiftlint.yml" --quiet --working-directory "$ROOT"
+  fi
+  exit 0
 fi
 
 export SCRIPT_INPUT_FILE_COUNT="$count"
@@ -67,10 +98,12 @@ while IFS= read -r path; do
   idx=$((idx + 1))
 done < <(sort -u "$tmpfile")
 
-swiftlint lint \
-  --strict \
-  --config "$ROOT/.swiftlint.yml" \
-  --quiet \
-  --force-exclude \
-  --use-script-input-files \
-  --working-directory "$ROOT"
+if [[ "$skip_swiftlint" == "0" ]]; then
+  swiftlint lint \
+    --strict \
+    --config "$ROOT/.swiftlint.yml" \
+    --quiet \
+    --force-exclude \
+    --use-script-input-files \
+    --working-directory "$ROOT"
+fi

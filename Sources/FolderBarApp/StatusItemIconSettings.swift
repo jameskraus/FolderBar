@@ -21,9 +21,9 @@ final class StatusItemIconSettings: ObservableObject {
     init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
         let stored = userDefaults.string(forKey: symbolNameKey) ?? Self.defaultSymbolName
-        self.symbolName = stored
-        self.resolvedSymbolName = stored
-        self.isValidSymbol = true
+        symbolName = stored
+        resolvedSymbolName = stored
+        isValidSymbol = true
         updateResolvedSymbolName()
     }
 

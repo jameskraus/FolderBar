@@ -1,5 +1,5 @@
-import Foundation
 import AppKit
+import Foundation
 import os
 import Sparkle
 
@@ -14,9 +14,7 @@ final class FolderBarUpdater: NSObject, ObservableObject {
     @Published private(set) var lastError: String?
     @Published private(set) var needsAppManagementPermission: Bool = false
 
-    private lazy var sparkleController: SPUStandardUpdaterController = {
-        SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: self, userDriverDelegate: nil)
-    }()
+    private lazy var sparkleController: SPUStandardUpdaterController = .init(startingUpdater: false, updaterDelegate: self, userDriverDelegate: nil)
 
     var isEnabled: Bool {
         guard Bundle.main.bundleURL.pathExtension == "app" else { return false }
@@ -58,7 +56,7 @@ final class FolderBarUpdater: NSObject, ObservableObject {
 }
 
 extension FolderBarUpdater: SPUUpdaterDelegate {
-    nonisolated func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
+    nonisolated func updater(_: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
         let versionString = item.displayVersionString
         Task { @MainActor [weak self] in
             self?.isUpdateAvailable = true
@@ -66,18 +64,18 @@ extension FolderBarUpdater: SPUUpdaterDelegate {
         }
     }
 
-    nonisolated func updaterDidNotFindUpdate(_ updater: SPUUpdater) {
+    nonisolated func updaterDidNotFindUpdate(_: SPUUpdater) {
         Task { @MainActor [weak self] in
             self?.isUpdateAvailable = false
             self?.availableVersionString = nil
         }
     }
 
-    nonisolated func updater(_ updater: SPUUpdater, didAbortWithError error: any Error) {
+    nonisolated func updater(_: SPUUpdater, didAbortWithError error: any Error) {
         handleSparkleError(error)
     }
 
-    nonisolated func updater(_ updater: SPUUpdater, didFinishUpdateCycleFor updateCheck: SPUUpdateCheck, error: (any Error)?) {
+    nonisolated func updater(_: SPUUpdater, didFinishUpdateCycleFor _: SPUUpdateCheck, error: (any Error)?) {
         Task { @MainActor [weak self] in
             self?.lastCheckedAt = Date()
             if let error {

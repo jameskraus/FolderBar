@@ -37,7 +37,7 @@ enum AppSigningInfo {
 
         let teamID = signingInfo[kSecCodeInfoTeamIdentifier] as? String
         let certificateSummary = (signingInfo[kSecCodeInfoCertificates] as? [SecCertificate])
-            .flatMap { $0.first }
+            .flatMap(\.first)
             .flatMap { SecCertificateCopySubjectSummary($0) as String? }
 
         if teamID != nil {

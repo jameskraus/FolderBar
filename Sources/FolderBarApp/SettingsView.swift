@@ -242,22 +242,22 @@ private struct SettingsHeaderView: View {
                 .resizable()
                 .scaledToFill()
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-#if DEBUG
-            Text("DEBUG")
-                .font(.system(size: 10, weight: .bold))
-                .padding(.horizontal, 7)
-                .padding(.vertical, 4)
-                .foregroundColor(.white)
-                .background(
-                    Capsule(style: .continuous)
-                        .fill(Color.orange)
-                )
-                .overlay(
-                    Capsule(style: .continuous)
-                        .strokeBorder(Color.black.opacity(0.18), lineWidth: 1)
-                )
-                .offset(x: 6, y: 6)
-#endif
+            #if DEBUG
+                Text("DEBUG")
+                    .font(.system(size: 10, weight: .bold))
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 4)
+                    .foregroundColor(.white)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(Color.orange)
+                    )
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .strokeBorder(Color.black.opacity(0.18), lineWidth: 1)
+                    )
+                    .offset(x: 6, y: 6)
+            #endif
         }
     }
 
@@ -270,13 +270,12 @@ private struct SettingsHeaderView: View {
     }
 
     private static var settingsHeaderIconImage: NSImage {
-#if DEBUG
-        if let url = Bundle.main.url(forResource: "SettingsHeaderIcon-Debug", withExtension: "png"),
-           let image = NSImage(contentsOf: url) {
-            return image
-        }
-#endif
+        #if DEBUG
+            if let url = Bundle.main.url(forResource: "SettingsHeaderIcon-Debug", withExtension: "png"),
+               let image = NSImage(contentsOf: url) {
+                return image
+            }
+        #endif
         return NSApp.applicationIconImage
     }
-
 }

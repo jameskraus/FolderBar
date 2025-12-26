@@ -52,7 +52,7 @@ struct IconPickerCollectionView: NSViewRepresentable {
         return scrollView
     }
 
-    func updateNSView(_ nsView: NSScrollView, context: Context) {
+    func updateNSView(_: NSScrollView, context: Context) {
         context.coordinator.onSelect = onSelect
         applySnapshotIfNeeded(symbolsRevision: symbolsRevision, symbols: symbols, coordinator: context.coordinator, animating: false)
         updateSelection(selectedSymbolName: selectedSymbolName, coordinator: context.coordinator)
@@ -97,7 +97,7 @@ struct IconPickerCollectionView: NSViewRepresentable {
             self.onSelect = onSelect
         }
 
-        func collectionView(_ collectionView: NSCollectionView, didSelectItemsAt indexPaths: Set<IndexPath>) {
+        func collectionView(_: NSCollectionView, didSelectItemsAt indexPaths: Set<IndexPath>) {
             guard let indexPath = indexPaths.first else { return }
             guard let symbolName = dataSource?.itemIdentifier(for: indexPath) else { return }
             onSelect(symbolName)

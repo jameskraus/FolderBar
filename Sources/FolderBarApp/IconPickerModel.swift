@@ -25,6 +25,7 @@ final class IconPickerModel: ObservableObject {
     @Published var filterText: String = "" {
         didSet { scheduleFilterUpdate() }
     }
+
     @Published private(set) var displayedSymbolNames: [String] = []
     @Published private(set) var displayedSymbolNamesRevision: Int = 0
     @Published private(set) var isLoading = true
@@ -105,7 +106,7 @@ final class IconPickerModel: ObservableObject {
         displayedSymbolNamesRevision &+= 1
     }
 
-    nonisolated private static func filteredSymbols(filter: String, symbols: [String], lowered: [String]) -> [String] {
+    private nonisolated static func filteredSymbols(filter: String, symbols: [String], lowered: [String]) -> [String] {
         var results: [String] = []
         results.reserveCapacity(512)
         for (name, loweredName) in zip(symbols, lowered) where loweredName.contains(filter) {
