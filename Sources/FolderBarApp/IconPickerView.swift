@@ -77,11 +77,12 @@ struct IconPickerView: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(40)
                 } else {
+                    let selectedSymbolName = iconSettings.resolvedSymbolName
                     LazyVGrid(columns: Self.columns, spacing: 10) {
                         ForEach(model.displayedSymbolNames, id: \.self) { symbolName in
                             IconCell(
                                 symbolName: symbolName,
-                                isSelected: symbolName == iconSettings.resolvedSymbolName
+                                isSelected: symbolName == selectedSymbolName
                             ) {
                                 iconSettings.symbolName = symbolName
                             }

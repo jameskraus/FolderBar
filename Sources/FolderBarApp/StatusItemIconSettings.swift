@@ -11,6 +11,7 @@ final class StatusItemIconSettings: ObservableObject {
     @Published var symbolName: String {
         didSet {
             userDefaults.set(symbolName, forKey: symbolNameKey)
+            updateResolvedSymbolName()
             onChange?(resolvedSymbolName)
         }
     }
@@ -19,18 +20,27 @@ final class StatusItemIconSettings: ObservableObject {
 
     init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
-        self.symbolName = userDefaults.string(forKey: symbolNameKey) ?? Self.defaultSymbolName
+        let stored = userDefaults.string(forKey: symbolNameKey) ?? Self.defaultSymbolName
+        self.symbolName = stored
+        self.resolvedSymbolName = stored
+        self.isValidSymbol = true
+        updateResolvedSymbolName()
     }
 
-    var isValidSymbol: Bool {
-        NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) != nil
-    }
-
-    var resolvedSymbolName: String {
-        isValidSymbol ? symbolName : Self.defaultSymbolName
-    }
+    @Published private(set) var resolvedSymbolName: String
+    @Published private(set) var isValidSymbol: Bool
 
     func resetToDefault() {
         symbolName = Self.defaultSymbolName
+    }
+
+    private func updateResolvedSymbolName() {
+        if NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) != nil {
+            resolvedSymbolName = symbolName
+            isValidSymbol = true
+        } else {
+            resolvedSymbolName = Self.defaultSymbolName
+            isValidSymbol = false
+        }
     }
 }
