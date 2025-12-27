@@ -6,6 +6,44 @@ Local plans belong in the `plans/` folder, which is gitignored.
 Current plan: `plans/DEVELOPMENT_PLAN.md`.
 Agents should skim that plan for the overall project goal and current direction.
 
+## Product goals / non-goals
+
+These are contributor-facing product notes. For the longer roadmap, see `plans/DEVELOPMENT_PLAN.md`.
+
+### Product goals (current + near-term)
+
+- Native macOS menu bar app that shows immediate children of a selected folder.
+- Items sorted by creation date (descending) with a fallback to modification date.
+- Drag files out of the panel like Finder (highest priority).
+- Popover-like UI via a custom `NSPanel` (not a plain `NSMenu`) to keep drag reliable.
+
+### Current limitations
+
+- Only one folder is supported today (single `NSStatusItem`); multi-folder is planned/tracked separately.
+
+### Explicit non-goals
+
+- No recursive browsing.
+- No ignore patterns; hidden files are currently always skipped (not configurable).
+- No max-items configuration.
+- No Mac App Store distribution.
+
+## Project structure
+
+- `Sources/FolderBarCore`: shared models + folder scanning/watching.
+- `Sources/FolderBarApp`: AppKit/SwiftUI UI (menu bar panel, settings, Sparkle updater).
+- `Sources/FolderBar`: executable entry point (`main.swift`) that runs `FolderBarApp`.
+- `Tests/FolderBarTests`: unit tests for `FolderBarCore`.
+- `Tests/FolderBarAppTests`: tests for `FolderBarApp`.
+- `Scripts/`: packaging/release helpers (`package_app.sh`, `compile_and_run.sh`, `release.sh`, etc).
+
+### SwiftPM targets
+
+- `FolderBarCore` (target): domain logic (scan/watch/models).
+- `FolderBarApp` (target): UI + updater wiring.
+- `FolderBar` (executableTarget): `@main` entry point.
+- `FolderBarTests` / `FolderBarAppTests` (testTarget): unit/smoke tests.
+
 ## Parallel Agents
 
 Multiple agents may be active in this repo at the same time. You must only commit your own work, and you should be deliberate about staging so you don't pick up other agents' changes.
@@ -139,7 +177,7 @@ bd sync               # Commit and push changes
 
 - **Dependencies**: Issues can block other issues. `bd ready` shows only unblocked work.
 - **Priority**: P0=critical, P1=high, P2=medium, P3=low, P4=backlog (use numbers, not words)
-- **Types**: task, bug, feature, epic, question, docs
+- **Types**: bug, feature, task, epic, chore, merge-request, molecule
 - **Blocking**: `bd dep add <issue> <depends-on>` to add dependencies
 
 ### Session Protocol
