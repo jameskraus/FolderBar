@@ -6,6 +6,12 @@
 
 Menu bar app for surfacing folders and their contents.
 
+Regenerate the README icon:
+
+```bash
+make readme_icon
+```
+
 ## Product goals (short list)
 
 - Native macOS menu bar app that shows immediate children of one or more folders.

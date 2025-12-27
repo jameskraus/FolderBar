@@ -4,7 +4,7 @@ PACKAGE_SCRIPT := Scripts/package_app.sh
 COMPILE_RUN_SCRIPT := Scripts/compile_and_run.sh
 CONFIG ?= debug
 
-.PHONY: build package run compile_and_run dev format lint
+.PHONY: build package run compile_and_run dev readme_icon format lint
 
 build:
 	swift build -c $(CONFIG)
@@ -19,6 +19,9 @@ compile_and_run:
 	$(COMPILE_RUN_SCRIPT) $(CONFIG)
 
 dev: compile_and_run
+
+readme_icon:
+	Scripts/generate_readme_icon.sh
 
 format:
 	swiftformat .
