@@ -59,11 +59,6 @@ FolderBar releases are automated via `./Scripts/release.sh` (builds, signs, nota
    - tag `vX.Y.Z` exists and is pushed
    - `appcast.xml` has the new entry and was committed
 
-Build-only (no tag/GitHub/appcast changes):
-```bash
-SKIP_PUBLISH=1 ./Scripts/release.sh
-```
-
 ## Testing Philosophy
 
 Prefer fast, deterministic unit tests over UI automation. Keep domain logic in importable modules, and add “seams” (protocols/DI for time, I/O, and system APIs) so tests don’t touch the filesystem/UI unless necessary. Add a small number of integration/smoke tests for critical paths, but avoid flaky timing-dependent tests in CI.
