@@ -6,6 +6,10 @@
 
 Menu bar app for surfacing folders and their contents.
 
+## Preview
+
+<video src="Assets/demo.mp4" controls></video>
+
 ## Product goals (short list)
 
 - Native macOS menu bar app that shows immediate children of one or more folders.
