@@ -97,9 +97,10 @@ private struct SelectedFolderView: View {
                                 Color.clear
                                     .frame(height: 0)
                                     .id(ScrollAnchor.top)
-                                ForEach(items.indices, id: \.self) { index in
-                                    FolderItemRow(item: items[index], now: now)
-                                    if index < items.count - 1 {
+                                let lastItemID = items.last?.id
+                                ForEach(items) { item in
+                                    FolderItemRow(item: item, now: now)
+                                    if item.id != lastItemID {
                                         Divider()
                                     }
                                 }
