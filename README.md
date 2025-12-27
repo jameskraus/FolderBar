@@ -4,7 +4,7 @@
 
 # FolderBar
 
-Menu bar app for surfacing folders and their contents.
+Quickly drag-and-drop files from an important folder right from your menu bar.
 
 ## Preview
 
