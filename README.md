@@ -8,7 +8,7 @@ Quickly drag-and-drop files from an important folder right from your menu bar.
 
 ## Preview
 
-<video src="Assets/demo.mp4" controls></video>
+https://github.com/user-attachments/assets/5ce4c1cf-1b59-431a-8e02-6a9e056ec85a
 
 ## Contributor notes
 
