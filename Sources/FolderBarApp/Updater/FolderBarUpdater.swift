@@ -97,8 +97,17 @@ extension FolderBarUpdater: SPUUpdaterDelegate {
     @MainActor
     private func applySparkleError(_ error: any Error) {
         let nsError = error as NSError
+        if Self.isNoUpdateFound(nsError) {
+            lastError = nil
+            needsAppManagementPermission = false
+            return
+        }
         lastError = Self.formatError(nsError)
         needsAppManagementPermission = Self.isAppManagementWriteDenied(nsError)
+    }
+
+    private static func isNoUpdateFound(_ error: NSError) -> Bool {
+        error.domain == SUSparkleErrorDomain && error.code == Int(SUError.noUpdateError.rawValue)
     }
 
     private static func isAppManagementWriteDenied(_ error: NSError) -> Bool {
