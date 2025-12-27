@@ -33,6 +33,37 @@ After any material app change, rebuild and relaunch the app:
 ./Scripts/compile_and_run.sh
 ```
 
+## Release Process
+
+FolderBar releases are automated via `./Scripts/release.sh` (builds, signs, notarizes, creates GitHub release + tag, and updates `appcast.xml`).
+
+1. Ensure `main` is clean and up to date:
+   ```bash
+   git checkout main
+   git pull --rebase
+   git status  # must be clean
+   ```
+2. Draft user-facing release notes from commits since the last release:
+   ```bash
+   last_tag="$(git describe --tags --abbrev=0)"
+   git log --oneline "$last_tag..HEAD"
+   ```
+   Turn this into a short `RELEASE_NOTES` string focused on product changes (ignore refactors, formatting, internal tooling unless it affects users).
+3. Bump the version in `version.env` (the scripts read `VERSION=` from here), commit, and push.
+4. Run the release script with your notes:
+   ```bash
+   RELEASE_NOTES="..." ./Scripts/release.sh
+   ```
+5. Verify results:
+   - `git status` is clean and `main` is up to date with origin
+   - tag `vX.Y.Z` exists and is pushed
+   - `appcast.xml` has the new entry and was committed
+
+Build-only (no tag/GitHub/appcast changes):
+```bash
+SKIP_PUBLISH=1 ./Scripts/release.sh
+```
+
 ## Testing Philosophy
 
 Prefer fast, deterministic unit tests over UI automation. Keep domain logic in importable modules, and add “seams” (protocols/DI for time, I/O, and system APIs) so tests don’t touch the filesystem/UI unless necessary. Add a small number of integration/smoke tests for critical paths, but avoid flaky timing-dependent tests in CI.
