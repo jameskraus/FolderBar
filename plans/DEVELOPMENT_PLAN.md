@@ -3,6 +3,13 @@
 > Goal: Build a modern **native** macOS **menu bar** app that watches one-or-more folders (**immediate children only**) and shows their contents sorted by **creation date (descending)** in a Gifox-like panel.
 > Highest priority: **Drag files out of the panel** so it behaves like dragging from Finder (e.g., drag an image/mp4 into a GitHub PR description field to upload/attach).
 
+> Status (as of 2025-12-27):
+> - ✅ Phases 0–3 implemented (packaging, scan/sort, drag-out, watcher)
+> - ✅ Phase 5 implemented (thumbnails + media-focused layout)
+> - ✅ Phase 6 implemented for the current single status item (icon picker)
+> - ✅ Phase 7 implemented (Sparkle updates + release scripts)
+> - ⏳ Phase 4 (multi-folder + persistence) not yet implemented (app currently supports one selected folder)
+
 ---
 
 ## 0) Product definition
@@ -45,7 +52,7 @@
 * Use AppKit **`NSStatusItem`** for menu bar icons.
 * Use a **popover/panel** for the dropdown UI (not a plain menu list), because **drag-and-drop out of a menu is fragile**.
 
-### Key UI decision: use an `NSPopover` (or panel) for drag support
+### Key UI decision: use a panel (not an `NSMenu`) for drag support
 
 Dragging “out” of an `NSMenu` is often unreliable because menus are transient tracking UI; once the pointer leaves, the menu can dismiss and cancel interactions.
 
@@ -55,24 +62,31 @@ tall menu bars. This keeps drag-out stable while still behaving like a popover.
 
 To make drag-and-drop rock-solid, build the dropdown as:
 
-* `NSStatusItem.button` click → toggle an `NSPopover`
-* Popover content is a SwiftUI view (`NSHostingController`) with a List/Grid
+* `NSStatusItem.button` click → toggle a popover-like `NSPanel` anchored to the status item button
+* Panel content is a SwiftUI view (`NSHostingController`) with a List/Grid
 * Use SwiftUI drag APIs (`onDrag`) backed by file URLs (`NSItemProvider`)
 
 This is the main architectural change vs “menu only” implementations: it’s the cleanest way to ensure “Finder-like drag”.
 
 ---
 
-## 2) Repository layout (target state)
+## 2) Repository layout (current state)
 
 ```
 FolderBar/
   Package.swift
+  Package.resolved
   README.md
   AGENTS.md
-  CHANGELOG.md
   LICENSE
   version.env
+  appcast.xml
+
+  Assets/
+    AppIcon.icon/
+    AppIcon-Debug.icon/
+    Readme/
+    demo.mp4
 
   Sources/
     FolderBarCore/
@@ -80,47 +94,46 @@ FolderBar/
         FolderConfig.swift
         FolderChildItem.swift
         FolderSnapshot.swift
-      Storage/
-        AppConfigStore.swift
       Scanning/
         FolderScanner.swift
       Watching/
         DirectoryWatcher.swift
-      Util/
-        DateFormatting.swift
-        Logging.swift
+
+    FolderBarApp/
+      FolderBarApplication.swift
+      MenuBarPanelController.swift
+      FolderPanelView.swift
+      FolderSelectionViewModel.swift
+      SettingsWindowController.swift
+      SettingsView.swift
+      ThumbnailCache.swift
+      Updater/
+        FolderBarUpdater.swift
 
     FolderBar/
-      App/
-        FolderBarApp.swift        // @main entry
-        AppLifecycle.swift        // wiring + boot
-      MenuBar/
-        FolderManager.swift       // creates instances per folder
-        FolderInstance.swift      // one folder -> one status item + watcher + snapshot
-        StatusItemController.swift
-        PopoverController.swift
-      UI/
-        FolderPanelView.swift     // SwiftUI popover content
-        FolderRowView.swift
-        IconPickerView.swift      // SF Symbols selection (later)
-      Preferences/
-        PreferencesWindow.swift   // optional; may not be needed early
+      main.swift
 
   Tests/
     FolderBarTests/
       FolderScannerTests.swift
-      ConfigStoreTests.swift
-      (optional) DirectoryWatcherIntegrationTests.swift
+      FolderBarCoreTests.swift
+    FolderBarAppTests/
+      FolderBarAppSmokeTests.swift
+      IconPickerModelTests.swift
+      StatusItemIconSettingsTests.swift
 
   Scripts/
     compile_and_run.sh
     package_app.sh
-    sign-and-notarize.sh          (later)
-    release.sh                    (later)
+    package_dmg.sh
+    notarize.sh
+    release.sh
+    update_appcast.py
 
   .github/workflows/ci.yml
   .swiftformat
   .swiftlint.yml
+  Makefile
 ```
 
 ---
@@ -132,7 +145,7 @@ FolderBar/
 * `swift build`
 * `swift test`
 * `./Scripts/package_app.sh debug`
-* `open FolderBar.app`
+* `open build/FolderBar.app`
 * `./Scripts/compile_and_run.sh` (dev loop)
 
 ### Packaging requirements
@@ -165,13 +178,18 @@ FolderBar/
   * `url: URL`
   * `name: String`
   * `isDirectory: Bool`
-  * `creationDate: Date?` (fallback to modification date for stability)
+  * `creationDate: Date` (fallback to modification date for stability)
+  * `fileSize: Int64?`
 * `FolderSnapshot`
 
   * `folderURL`
   * `items: [FolderChildItem]` sorted by creationDate desc
   * `generatedAt: Date`
-* `AppConfigStore`
+* `FolderSelectionViewModel` (current single-folder app)
+
+  * persists selected folder path in `UserDefaults`
+  * owns scanning + watching lifecycle and publishes items for the panel
+* `AppConfigStore` (planned; Phase 4)
 
   * load/save `AppConfig` JSON in Application Support
 * `FolderScanner`
@@ -180,16 +198,19 @@ FolderBar/
 * `DirectoryWatcher`
 
   * file descriptor + `DispatchSourceFileSystemObject` (debounced)
-* `FolderInstance`
+* `FolderInstance` (planned; Phase 4)
 
-  * owns one status item + popover + watcher + cached snapshot
-* `FolderManager`
+  * owns one status item + panel + watcher + cached snapshot
+* `FolderManager` (planned; Phase 4)
 
   * owns all folder instances, applies config changes (add/remove/change)
 
 ### Data flow
 
-* On launch:
+* On launch (current):
+
+  * `FolderSelectionViewModel` reads the last selected folder from `UserDefaults`
+* On launch (planned; Phase 4):
 
   * `AppConfigStore.load()` → `FolderManager.createInstances()`
 * For each folder instance:
@@ -231,15 +252,19 @@ FolderBar/
 
 ### Phase 0 — Bootstrap repo and packaging (foundation)
 
-**Deliverable:** app packages and runs as a menu bar accessory; shows a popover with placeholder UI.
+**Status:** ✅ Implemented
+
+**Deliverable:** app packages and runs as a menu bar accessory; shows a panel with UI.
 
 Tasks:
 
 * Create SwiftPM package with targets:
 
   * `FolderBarCore` (library)
+  * `FolderBarApp` (library)
   * `FolderBar` (executable)
   * `FolderBarTests`
+  * `FolderBarAppTests`
 * Add scripts:
 
   * `Scripts/package_app.sh`
@@ -248,18 +273,20 @@ Tasks:
 * Implement minimal menu bar shell:
 
   * One `NSStatusItem` with a system SF Symbol icon
-  * Clicking toggles an `NSPopover`
-  * Popover content is a SwiftUI view with dummy list
+  * Clicking toggles a popover-like `NSPanel` anchored to the status item
+  * Panel content is a SwiftUI view
 
 Acceptance criteria:
 
 * Menu bar icon appears.
-* Clicking opens a popover.
+* Clicking opens a panel.
 * App has no Dock icon.
 
 ---
 
 ### Phase 1 — Folder scanning + creation-date sorting + display in panel
+
+**Status:** ✅ Implemented
 
 **Deliverable:** panel shows real folder items sorted by creation date desc.
 
@@ -274,9 +301,9 @@ Tasks:
 
   * choose an initial folder behavior:
 
-    * If no config exists: prompt user to pick a folder on first run
-    * Otherwise: default to `~/Downloads` until user changes (agent decision; prefer prompting)
-  * display list of items in the popover with file icons
+    * If no folder is selected: show a null state with a “Choose Folder” action (no auto-prompt)
+    * Persist the selected folder so it restores on relaunch
+  * display list of items in the panel with file icons
 
 Unit tests:
 
@@ -291,13 +318,15 @@ Acceptance criteria:
 
 ### Phase 2 — Highest priority: Drag-and-drop out of the panel (Finder-like)
 
-**Deliverable:** dragging an item out of the popover works like Finder drag.
+**Status:** ✅ Implemented
+
+**Deliverable:** dragging an item out of the panel works like Finder drag.
 
 Tasks (core):
 
 * Implement SwiftUI row drag:
 
-  * `FolderRowView` uses `.onDrag { NSItemProvider(object: url as NSURL) }`
+  * row view uses `.onDrag { NSItemProvider(object: url as NSURL) }`
   * Ensure exported type supports file drops (UTType.fileURL)
 * Compatibility improvements:
 
@@ -307,10 +336,8 @@ Tasks (core):
     * optionally plain-text path as secondary for apps that prefer text drops
 * UI behavior:
 
-  * Ensure the popover doesn’t immediately dismiss when drag starts.
-
-    * Prefer `NSPopover.Behavior.applicationDefined` (or `.semitransient`) and manage dismissal explicitly.
-  * After a successful drop, it’s acceptable for popover to close (but not required). The key is: drag must not cancel.
+  * Ensure the panel doesn’t dismiss when drag starts (current implementation uses an anchored `NSPanel` and manual dismissal).
+  * After a successful drop, it’s acceptable for the panel to close (but not required). The key is: drag must not cancel.
 
 Manual QA matrix (must pass):
 
@@ -331,6 +358,8 @@ Acceptance criteria:
 
 ### Phase 3 — Low-overhead folder watching (automatic refresh)
 
+**Status:** ✅ Implemented
+
 **Deliverable:** panel updates automatically when folder contents change.
 
 Tasks:
@@ -345,7 +374,7 @@ Tasks:
 
 Edge cases:
 
-* If folder becomes inaccessible (permissions / deleted), show an error state and provide “Change Folder…” action.
+* If folder becomes inaccessible (permissions / deleted), reset to the null state and let the user re-select a folder.
 
 Acceptance criteria:
 
@@ -355,6 +384,8 @@ Acceptance criteria:
 ---
 
 ### Phase 4 — Persistence + multi-folder icons (one icon per folder)
+
+**Status:** ⏳ Not yet implemented (tracked as `FolderBar-irs`)
 
 **Deliverable:** multiple status items, persisted across relaunch.
 
@@ -385,6 +416,8 @@ Notes:
 
 ### Phase 5 — Polished panel UI for media workflows (images/mp4)
 
+**Status:** ✅ Implemented
+
 **Deliverable:** the panel is optimized for quick media sharing.
 
 Tasks:
@@ -409,7 +442,9 @@ Acceptance criteria:
 
 ### Phase 6 — Per-folder SF Symbol icon selection (simple, practical)
 
-**Deliverable:** user can set each folder’s menu bar icon to an SF Symbol.
+**Status:** ✅ Implemented for the current single status item (per-folder depends on Phase 4)
+
+**Deliverable:** user can set the menu bar icon to an SF Symbol.
 
 Tasks:
 
@@ -435,18 +470,15 @@ Acceptance criteria:
 
 ### Phase 7 — Release pipeline (direct download)
 
-**Deliverable:** reproducible signed/notarized zip for GitHub Releases.
+**Status:** ✅ Implemented
+
+**Deliverable:** reproducible signed/notarized ZIP + DMG for GitHub Releases + Sparkle.
 
 Tasks:
 
-* Extend `package_app.sh` to embed version from `version.env`.
-* Add signing + notarization script:
-
-  * codesign app
-  * zip
-  * notarize via `notarytool`
-  * staple
-* Produce `FolderBar-x.y.z.zip` suitable for releases.
+* `Scripts/package_app.sh` embeds version from `version.env`.
+* `Scripts/notarize.sh` submits notarization via `notarytool`.
+* `Scripts/release.sh` builds, signs, notarizes, creates ZIP + DMG, publishes a GitHub release/tag, and updates `appcast.xml` (via `Scripts/update_appcast.py`).
 
 Acceptance criteria:
 
@@ -459,8 +491,8 @@ Acceptance criteria:
 ### Unit tests (must)
 
 * `FolderScanner` sorting (creation date) and metadata extraction.
-* `AppConfigStore` load/save and atomic write semantics.
-* Date formatting helpers.
+* Smoke/unit tests for app modules (e.g. icon picker model and status item icon settings).
+* (Phase 4) `AppConfigStore` load/save and atomic write semantics.
 
 ### Integration tests (optional / best-effort)
 
@@ -505,35 +537,35 @@ Acceptance criteria:
 
 ## 9) Ready-to-assign ticket list (in priority order)
 
-1. **Bootstrap + packaging**
+1. **Bootstrap + packaging** (✅ implemented)
 
-* SwiftPM targets, scripts, CI, popover shell.
+* SwiftPM targets, scripts, CI, panel shell.
 
-2. **Scan + render**
+2. **Scan + render** (✅ implemented)
 
 * Folder scanning, sorted list display.
 
-3. **Drag-and-drop out of panel (highest priority)**
+3. **Drag-and-drop out of panel (highest priority)** (✅ implemented)
 
-* `onDrag` with file URLs, popover behavior tuning, manual QA matrix.
+* `onDrag` with file URLs, panel behavior tuning, manual QA matrix.
 
-4. **Watcher**
+4. **Watcher** (✅ implemented)
 
 * DispatchSource watcher with debounce, auto-refresh.
 
-5. **Persistence + multi-folder**
+5. **Persistence + multi-folder** (⏳ next)
 
 * JSON config store, multiple status items, add/remove/change folder.
 
-6. **Polish for media**
+6. **Polish for media** (✅ implemented)
 
 * thumbnails, row layout, performance.
 
-7. **SF Symbol icons**
+7. **SF Symbol icons** (✅ implemented for single icon; per-folder after Phase 4)
 
 * per-folder icon selection and persistence.
 
-8. **Release pipeline**
+8. **Release pipeline** (✅ implemented)
 
 * signing/notarization and GitHub release artifact.
 
@@ -544,7 +576,7 @@ Acceptance criteria:
 * **SwiftPM**: Swift Package Manager. Here it replaces an Xcode project as the primary build definition.
 * **Executable target**: A SwiftPM target that builds a runnable binary (our app binary).
 * **NSStatusItem**: The native menu bar icon object.
-* **NSPopover**: A small panel anchored to UI (here: the status item button).
+* **Menu bar panel**: A popover-like `NSPanel` anchored to the status item button.
 * **onDrag**: SwiftUI modifier that provides drag data via `NSItemProvider`, enabling Finder-like drag behavior.
 * **Debounce**: Coalesces bursts of filesystem events into one refresh after a short delay.
 * **@MainActor**: Ensures UI state changes happen on the main thread.
