@@ -10,9 +10,9 @@ Quickly drag-and-drop files from an important folder right from your menu bar.
 
 https://github.com/user-attachments/assets/5ce4c1cf-1b59-431a-8e02-6a9e056ec85a
 
-## Contributor notes
+## Agent notes
 
-Contributor-oriented docs (product goals/non-goals, project structure, release workflow) live in `AGENTS.md`.
+Agent-oriented docs (product goals/non-goals, project structure, release workflow) live in `AGENTS.md`.
 
 ## Build
 
@@ -24,29 +24,19 @@ swift build
 
 FolderBar runs as a packaged `.app` (Sparkle and signing behave differently outside a real bundle).
 
-### Default run (no setup)
-
-This is the highest-utility development command (builds `build/FolderBar.app` and relaunches it):
-
 ```bash
 ./Scripts/compile_and_run.sh
 ```
 
-By default, the packaging step will **ad-hoc sign** the app if no signing identity is configured. This avoids needing any certificates and keeps the command zero-config for new checkouts.
+### Dev signing
 
-### Recommended dev signing (configure once)
-
-For behavior closest to release builds (fewer permission prompts and consistent identity), set a signing identity once in `.env.local`:
+Set a signing identity once in `.env.local`:
 
 ```bash
 SIGNING_IDENTITY="Apple Development: Your Name (TEAMID)"
 ```
 
-To skip signing entirely, set:
-
-```bash
-SIGN_ADHOC=0
-```
+If `SIGNING_IDENTITY` is not set, packaging will fall back to ad-hoc signing.
 
 ## Lint / Format
 
@@ -69,21 +59,6 @@ This appends a call to the repo-managed hook into your local `.git/hooks/pre-pus
 ```bash
 ./Scripts/package_app.sh
 ```
-
-## Local code signing (optional, but recommended)
-
-`Scripts/package_app.sh` supports signing to reduce local permission prompts and to behave more like production.
-
-```bash
-SIGNING_IDENTITY="Apple Development: Your Name (TEAMID)" ./Scripts/package_app.sh
-```
-
-You can set a default identity once in `.env.local` (ignored by git):
-
-```bash
-SIGNING_IDENTITY="Apple Development: Your Name (TEAMID)"
-```
-
 Both `Scripts/package_app.sh` and `Scripts/compile_and_run.sh` will source `.env` and `.env.local` automatically (local overrides).
 
 ## Release (signed + notarized + published)
@@ -116,61 +91,9 @@ This produces + publishes:
 - GitHub Release assets
 - `appcast.xml` update committed to `main`
 
-Build-only (no tag/GitHub/appcast changes):
+## Updates
 
-```bash
-SKIP_PUBLISH=1 ./Scripts/release.sh
-```
-
-## Updates (Sparkle)
-
-FolderBar uses Sparkle for auto-updates via an appcast hosted in this repo:
-
-- Appcast URL: `https://raw.githubusercontent.com/jameskraus/FolderBar/main/appcast.xml`
-- The release ZIP (`FolderBar-<version>.zip`) is the Sparkle update payload.
-- The DMG (`FolderBar-<version>.dmg`) is the human-friendly installer.
-
-### Keys
-
-Sparkle updates are signed with an Ed25519 keypair:
-
-- `SUPublicEDKey` (public key) is embedded in the app’s `Info.plist` at packaging time.
-- The private key must never be committed (stored in your Keychain by default).
-
-One-time key generation (requires Sparkle tools):
-
-```bash
-brew install --cask sparkle
-open /Applications/Sparkle.app
-```
-
-Then run:
-
-```bash
-/Applications/Sparkle.app/Contents/Resources/bin/generate_keys
-```
-
-Add the public key (base64) to `.env.local`:
-
-```bash
-SPARKLE_PUBLIC_ED_KEY="BASE64_PUBLIC_KEY_FROM_GENERATE_KEYS"
-```
-
-Optional (CI / non-interactive signing): export the private key to a file and set its path in `.env.local`:
-
-```bash
-SPARKLE_ED_PRIVATE_KEY_FILE="/absolute/path/to/ed25519_private_key"
-```
-
-### Troubleshooting
-
-If Sparkle shows an update error and macOS says FolderBar was prevented from modifying apps, enable FolderBar in **System Settings → Privacy & Security → App Management**, then retry the update.
-
-To list available identities:
-
-```bash
-security find-identity -v -p codesigning
-```
+Sparkle update/appcast/key details live in `docs/UPDATES.md`.
 
 ## Test
 
