@@ -4,12 +4,27 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
+skip_build=0
+skip_test=0
 skip_swiftlint=0
 skip_swiftformat=0
+
+if [[ "${FOLDERBAR_SKIP_CI:-}" == "1" ]]; then
+  skip_build=1
+  skip_test=1
+fi
 
 if [[ "${FOLDERBAR_SKIP_LINT:-}" == "1" ]]; then
   skip_swiftlint=1
   skip_swiftformat=1
+fi
+
+if [[ "${FOLDERBAR_SKIP_BUILD:-}" == "1" || "${SKIP_SWIFTBUILD:-}" == "1" ]]; then
+  skip_build=1
+fi
+
+if [[ "${FOLDERBAR_SKIP_TESTS:-}" == "1" || "${SKIP_SWIFTTEST:-}" == "1" ]]; then
+  skip_test=1
 fi
 
 if [[ "${SKIP_SWIFTLINT:-}" == "1" ]]; then
@@ -20,7 +35,7 @@ if [[ "${SKIP_SWIFTFORMAT:-}" == "1" || "${FOLDERBAR_SKIP_FORMAT:-}" == "1" ]]; 
   skip_swiftformat=1
 fi
 
-if [[ "$skip_swiftlint" == "1" && "$skip_swiftformat" == "1" ]]; then
+if [[ "$skip_build" == "1" && "$skip_test" == "1" && "$skip_swiftlint" == "1" && "$skip_swiftformat" == "1" ]]; then
   exit 0
 fi
 
@@ -38,72 +53,23 @@ if [[ "$skip_swiftlint" == "0" ]] && ! command -v swiftlint >/dev/null 2>&1; the
   exit 1
 fi
 
+if [[ "$skip_build" == "0" && "$skip_test" == "0" && "$skip_swiftlint" == "0" && "$skip_swiftformat" == "0" ]]; then
+  make ci
+  exit 0
+fi
+
+if [[ "$skip_build" == "0" ]]; then
+  make build
+fi
+
+if [[ "$skip_test" == "0" ]]; then
+  make test
+fi
+
 if [[ "$skip_swiftformat" == "0" ]]; then
-  swiftformat --lint .
+  make format_check
 fi
-
-EMPTY_TREE="$(git hash-object -t tree /dev/null)"
-
-tmpfile="$(mktemp)"
-trap 'rm -f "$tmpfile"' EXIT
-
-stdin=""
-if [[ ! -t 0 ]]; then
-  stdin="$(cat || true)"
-fi
-
-if [[ -n "$stdin" ]]; then
-  while read -r local_ref local_sha remote_ref remote_sha; do
-    if [[ -z "${local_sha}" ]]; then
-      continue
-    fi
-
-    base_sha="$remote_sha"
-    if [[ "${remote_sha}" =~ ^0+$ ]]; then
-      base_sha="$EMPTY_TREE"
-    fi
-
-    git diff --name-only "$base_sha" "$local_sha" -- '*.swift' >>"$tmpfile" || true
-  done <<<"$stdin"
-else
-  if git rev-parse --verify '@{u}' >/dev/null 2>&1; then
-    upstream="$(git rev-parse '@{u}')"
-    base_sha="$(git merge-base HEAD "$upstream")"
-    git diff --name-only "$base_sha" HEAD -- '*.swift' >>"$tmpfile" || true
-  else
-    if [[ "$skip_swiftlint" == "0" ]]; then
-      swiftlint lint --strict --config "$ROOT/.swiftlint.yml" --quiet --working-directory "$ROOT"
-    fi
-    exit 0
-  fi
-fi
-
-if [[ ! -s "$tmpfile" ]]; then
-  exit 0
-fi
-
-count="$(sort -u "$tmpfile" | wc -l | tr -d ' ')"
-if [[ "$count" -gt 200 ]]; then
-  if [[ "$skip_swiftlint" == "0" ]]; then
-    swiftlint lint --strict --config "$ROOT/.swiftlint.yml" --quiet --working-directory "$ROOT"
-  fi
-  exit 0
-fi
-
-export SCRIPT_INPUT_FILE_COUNT="$count"
-idx=0
-while IFS= read -r path; do
-  [[ -z "$path" ]] && continue
-  export "SCRIPT_INPUT_FILE_${idx}=${ROOT}/${path}"
-  idx=$((idx + 1))
-done < <(sort -u "$tmpfile")
 
 if [[ "$skip_swiftlint" == "0" ]]; then
-  swiftlint lint \
-    --strict \
-    --config "$ROOT/.swiftlint.yml" \
-    --quiet \
-    --force-exclude \
-    --use-script-input-files \
-    --working-directory "$ROOT"
+  make lint
 fi

@@ -34,7 +34,7 @@ if [[ -f "$TARGET_HOOK" ]]; then
 
   cat >>"$TARGET_HOOK" <<'EOF'
 
-# FolderBar: repo-managed SwiftFormat + SwiftLint pre-push hook
+# FolderBar: repo-managed pre-push CI gate
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 1
 "$ROOT/.githooks/pre-push" "$@" || exit $?
 EOF
@@ -54,4 +54,4 @@ EOF
   echo "Installed pre-push hook: $TARGET_HOOK" >&2
 fi
 
-echo "To skip once: git push --no-verify (or SKIP_SWIFTLINT=1 git push / SKIP_SWIFTFORMAT=1 git push)" >&2
+echo "To skip once: git push --no-verify (or FOLDERBAR_SKIP_CI=1 git push / SKIP_SWIFTLINT=1 git push / SKIP_SWIFTFORMAT=1 git push)" >&2
