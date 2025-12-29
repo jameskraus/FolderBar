@@ -17,6 +17,7 @@ final class FolderSelectionViewModel: ObservableObject {
     private let scanner = FolderScanner()
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "FolderBar", category: "FolderSelection")
     private var watcher: DirectoryWatcher?
+    private var watchTask: Task<Void, Never>?
     private var refreshTimer: Timer?
     private var activeOpenPanel: NSOpenPanel?
     private weak var activeOpenPanelPresentingWindow: NSWindow?
@@ -226,15 +227,18 @@ final class FolderSelectionViewModel: ObservableObject {
     }
 
     private func startWatching(_ url: URL) {
+        stopWatching()
         let watcher = DirectoryWatcher(url: url, debounceInterval: 0.2)
-        watcher.onChange = { [weak self] in
-            Task { @MainActor in
-                self?.refreshItems()
-            }
-        }
         do {
-            try watcher.start()
+            let changes = try watcher.changes()
             self.watcher = watcher
+            watchTask = Task { [weak self] in
+                guard let self else { return }
+                for await _ in changes {
+                    guard selectedFolderURL == url else { continue }
+                    refreshItems()
+                }
+            }
         } catch {
             logger.error("Failed to start watcher: \(String(describing: error))")
             clearSelection()
@@ -242,6 +246,8 @@ final class FolderSelectionViewModel: ObservableObject {
     }
 
     private func stopWatching() {
+        watchTask?.cancel()
+        watchTask = nil
         watcher?.stop()
         watcher = nil
     }

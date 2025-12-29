@@ -2,18 +2,19 @@ import Darwin
 import Dispatch
 import Foundation
 
-public final class DirectoryWatcher {
+public final class DirectoryWatcher: @unchecked Sendable {
     public enum WatcherError: Swift.Error {
         case failedToOpen(path: String, errno: Int32)
     }
 
-    public var onChange: (() -> Void)?
-
     private let url: URL
     private let debounceInterval: TimeInterval
     private let queue: DispatchQueue
+    private let queueSpecificKey = DispatchSpecificKey<UInt8>()
+    private let queueSpecificValue: UInt8 = 1
     private var source: DispatchSourceFileSystemObject?
-    private var debounceWorkItem: DispatchWorkItem?
+    private var continuation: AsyncStream<Void>.Continuation?
+    private var debounceTask: Task<Void, Never>?
     private var fileDescriptor: Int32 = -1
 
     public init(
@@ -24,65 +25,103 @@ public final class DirectoryWatcher {
         self.url = url
         self.debounceInterval = debounceInterval
         self.queue = queue
+        queue.setSpecific(key: queueSpecificKey, value: queueSpecificValue)
     }
 
     deinit {
         stop()
     }
 
-    public func start() throws {
+    public func changes() throws -> AsyncStream<Void> {
         stop()
 
-        let fd = open(url.path, O_EVTONLY)
-        guard fd >= 0 else {
-            throw WatcherError.failedToOpen(path: url.path, errno: errno)
-        }
-        fileDescriptor = fd
-
-        let source = DispatchSource.makeFileSystemObjectSource(
-            fileDescriptor: fd,
-            eventMask: [.write, .rename, .delete],
-            queue: queue
-        )
-
-        source.setEventHandler { [weak self] in
-            self?.scheduleDebouncedChange()
-        }
-
-        source.setCancelHandler { [weak self] in
-            guard let self else { return }
-            if fileDescriptor >= 0 {
-                close(fileDescriptor)
-                fileDescriptor = -1
+        var streamContinuation: AsyncStream<Void>.Continuation?
+        let stream = AsyncStream<Void> { continuation in
+            streamContinuation = continuation
+            continuation.onTermination = { [weak self] _ in
+                self?.stop()
             }
         }
 
-        self.source = source
-        source.resume()
+        guard let continuation = streamContinuation else { return stream }
+
+        do {
+            try performOnQueue {
+                let fd = open(url.path, O_EVTONLY)
+                guard fd >= 0 else {
+                    throw WatcherError.failedToOpen(path: url.path, errno: errno)
+                }
+                fileDescriptor = fd
+
+                self.continuation = continuation
+
+                let source = DispatchSource.makeFileSystemObjectSource(
+                    fileDescriptor: fd,
+                    eventMask: [.write, .rename, .delete],
+                    queue: queue
+                )
+
+                source.setEventHandler { [weak self] in
+                    self?.scheduleDebouncedYield()
+                }
+
+                source.setCancelHandler { [weak self] in
+                    guard let self else { return }
+                    if fileDescriptor >= 0 {
+                        close(fileDescriptor)
+                        fileDescriptor = -1
+                    }
+                }
+
+                self.source = source
+                source.resume()
+            }
+        } catch {
+            continuation.finish()
+            throw error
+        }
+
+        return stream
     }
 
     public func stop() {
-        debounceWorkItem?.cancel()
-        debounceWorkItem = nil
+        performOnQueue {
+            debounceTask?.cancel()
+            debounceTask = nil
 
-        source?.cancel()
-        source = nil
+            let continuation = continuation
+            self.continuation = nil
+            continuation?.finish()
+
+            source?.cancel()
+            source = nil
+        }
     }
 
-    private func scheduleDebouncedChange() {
-        debounceWorkItem?.cancel()
-
-        let handler = onChange
-        let workItem = DispatchWorkItem {
-            handler?()
+    private func performOnQueue<T>(_ operation: () throws -> T) rethrows -> T {
+        if DispatchQueue.getSpecific(key: queueSpecificKey) == queueSpecificValue {
+            return try operation()
         }
+        return try queue.sync(execute: operation)
+    }
 
-        debounceWorkItem = workItem
+    private func scheduleDebouncedYield() {
+        debounceTask?.cancel()
+        debounceTask = nil
+        guard let continuation else { return }
 
         if debounceInterval <= 0 {
-            queue.async(execute: workItem)
-        } else {
-            queue.asyncAfter(deadline: .now() + debounceInterval, execute: workItem)
+            continuation.yield(())
+            return
+        }
+
+        let nanosecondsDouble = debounceInterval * 1_000_000_000
+        let nanoseconds = UInt64(max(0, min(nanosecondsDouble, Double(UInt64.max))))
+
+        debounceTask = Task { @Sendable [continuation] in
+            try? await Task.sleep(nanoseconds: nanoseconds)
+            guard !Task.isCancelled else { return }
+            continuation.yield(())
         }
     }
 }
