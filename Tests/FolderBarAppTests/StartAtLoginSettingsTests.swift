@@ -1,5 +1,5 @@
-import ServiceManagement
 @testable import FolderBarApp
+import ServiceManagement
 import XCTest
 
 @MainActor
