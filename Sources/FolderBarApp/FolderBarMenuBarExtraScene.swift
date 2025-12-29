@@ -11,6 +11,7 @@ private final class MenuBarExtraServices: ObservableObject {
     let viewModel: FolderSelectionViewModel
     let updater: FolderBarUpdater
     let iconSettings: StatusItemIconSettings
+    let startAtLogin: StartAtLoginSettings
 
     @Published private(set) var resolvedSymbolName: String
 
@@ -18,13 +19,15 @@ private final class MenuBarExtraServices: ObservableObject {
     private lazy var settingsWindowController = SettingsWindowController(
         viewModel: viewModel,
         updater: updater,
-        iconSettings: iconSettings
+        iconSettings: iconSettings,
+        startAtLogin: startAtLogin
     )
 
     init() {
         viewModel = FolderSelectionViewModel()
         updater = FolderBarUpdater()
         iconSettings = StatusItemIconSettings()
+        startAtLogin = StartAtLoginSettings()
         resolvedSymbolName = iconSettings.resolvedSymbolName
 
         iconSettings.onChange = { [weak self] symbolName in

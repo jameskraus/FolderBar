@@ -6,6 +6,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
     private let viewModel: FolderSelectionViewModel
     private let updater: FolderBarUpdater
     private let iconSettings: StatusItemIconSettings
+    private let startAtLogin: StartAtLoginSettings
     private let appSigningSummary: String?
     private var previousActivationPolicy: NSApplication.ActivationPolicy?
     private lazy var window: NSWindow = {
@@ -19,6 +20,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
             viewModel: viewModel,
             updater: updater,
             iconSettings: iconSettings,
+            startAtLogin: startAtLogin,
             appVersion: appVersion,
             appSigningSummary: appSigningSummary,
             onChooseFolder: { [weak self] in
@@ -41,10 +43,16 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         return window
     }()
 
-    init(viewModel: FolderSelectionViewModel, updater: FolderBarUpdater, iconSettings: StatusItemIconSettings) {
+    init(
+        viewModel: FolderSelectionViewModel,
+        updater: FolderBarUpdater,
+        iconSettings: StatusItemIconSettings,
+        startAtLogin: StartAtLoginSettings
+    ) {
         self.viewModel = viewModel
         self.updater = updater
         self.iconSettings = iconSettings
+        self.startAtLogin = startAtLogin
         appSigningSummary = AppSigningInfo.warningSummary()
         super.init()
     }

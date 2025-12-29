@@ -5,6 +5,7 @@ struct SettingsView: View {
     @ObservedObject var viewModel: FolderSelectionViewModel
     @ObservedObject var updater: FolderBarUpdater
     @ObservedObject var iconSettings: StatusItemIconSettings
+    @ObservedObject var startAtLogin: StartAtLoginSettings
     let appVersion: String
     let appSigningSummary: String?
     let onChooseFolder: () -> Void
@@ -61,6 +62,49 @@ struct SettingsView: View {
                                 Text("Unknown icon was previously selected. Using the default icon.")
                                     .font(.system(size: 11))
                                     .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+
+                    Divider()
+                        .padding(.vertical, 16)
+
+                    SettingsSection(title: "Startup") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Toggle(
+                                "Start at login",
+                                isOn: Binding(
+                                    get: { startAtLogin.isEnabled },
+                                    set: { startAtLogin.setEnabled($0) }
+                                )
+                            )
+                            .toggleStyle(.switch)
+                            .disabled(!startAtLogin.isSupported)
+
+                            if startAtLogin.needsApproval {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("Requires approval in System Settings → General → Login Items.")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(.secondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+
+                                    Button("Open Login Items…") {
+                                        startAtLogin.openSystemSettingsLoginItems()
+                                    }
+                                    .controlSize(.small)
+                                }
+                            } else if !startAtLogin.isSupported {
+                                Text("Start at login is unavailable for this build.")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+
+                            if let errorMessage = startAtLogin.errorMessage {
+                                Text(errorMessage)
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(3)
                             }
                         }
                     }
@@ -145,6 +189,9 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingIconPicker) {
             IconPickerView(iconSettings: iconSettings)
+        }
+        .onAppear {
+            startAtLogin.refresh()
         }
     }
 

@@ -21,11 +21,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let folderSelectionViewModel = FolderSelectionViewModel()
     private let iconSettings = StatusItemIconSettings()
     private let updater = FolderBarUpdater()
+    private let startAtLogin = StartAtLoginSettings()
     private var updateProbeTimer: Timer?
     private lazy var settingsWindowController = SettingsWindowController(
         viewModel: folderSelectionViewModel,
         updater: updater,
-        iconSettings: iconSettings
+        iconSettings: iconSettings,
+        startAtLogin: startAtLogin
     )
     private lazy var panelController = MenuBarPanelController(
         statusItem: statusItem,
