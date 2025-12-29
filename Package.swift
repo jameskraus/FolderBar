@@ -11,12 +11,9 @@ let strictConcurrencySwiftSettings: [SwiftSetting] = [
 ]
 
 let actorDataRaceChecksSwiftSettings: [SwiftSetting] = [
-    .unsafeFlags(
-        [
-            "-enable-actor-data-race-checks"
-        ],
-        .when(configuration: .debug)
-    )
+    .unsafeFlags([
+        "-enable-actor-data-race-checks"
+    ])
 ]
 
 let swiftSettings: [SwiftSetting] = strictConcurrencySwiftSettings + actorDataRaceChecksSwiftSettings
