@@ -3,6 +3,13 @@
 
 import PackageDescription
 
+let strictConcurrencySwiftSettings: [SwiftSetting] = [
+    .unsafeFlags([
+        "-strict-concurrency=complete",
+        "-warn-concurrency"
+    ])
+]
+
 let package = Package(
     name: "FolderBar",
     platforms: [
@@ -27,31 +34,36 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "FolderBarCore"
+            name: "FolderBarCore",
+            swiftSettings: strictConcurrencySwiftSettings
         ),
         .target(
             name: "FolderBarApp",
             dependencies: [
                 "FolderBarCore",
                 .product(name: "Sparkle", package: "Sparkle")
-            ]
+            ],
+            swiftSettings: strictConcurrencySwiftSettings
         ),
         .executableTarget(
             name: "FolderBar",
             dependencies: [
                 "FolderBarApp"
             ],
+            swiftSettings: strictConcurrencySwiftSettings,
             linkerSettings: [
                 .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])
             ]
         ),
         .testTarget(
             name: "FolderBarTests",
-            dependencies: ["FolderBarCore"]
+            dependencies: ["FolderBarCore"],
+            swiftSettings: strictConcurrencySwiftSettings
         ),
         .testTarget(
             name: "FolderBarAppTests",
-            dependencies: ["FolderBarApp"]
+            dependencies: ["FolderBarApp"],
+            swiftSettings: strictConcurrencySwiftSettings
         )
     ]
 )
