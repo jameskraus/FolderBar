@@ -2,7 +2,7 @@ import Darwin
 import Dispatch
 import Foundation
 
-public final class DirectoryWatcher: @unchecked Sendable {
+public actor DirectoryWatcher {
     public enum WatcherError: Swift.Error {
         case failedToOpen(path: String, errno: Int32)
     }
@@ -10,8 +10,6 @@ public final class DirectoryWatcher: @unchecked Sendable {
     private let url: URL
     private let debounceInterval: TimeInterval
     private let queue: DispatchQueue
-    private let queueSpecificKey = DispatchSpecificKey<UInt8>()
-    private let queueSpecificValue: UInt8 = 1
     private var source: DispatchSourceFileSystemObject?
     private var continuation: AsyncStream<Void>.Continuation?
     private var debounceTask: Task<Void, Never>?
@@ -25,11 +23,19 @@ public final class DirectoryWatcher: @unchecked Sendable {
         self.url = url
         self.debounceInterval = debounceInterval
         self.queue = queue
-        queue.setSpecific(key: queueSpecificKey, value: queueSpecificValue)
     }
 
     deinit {
-        stop()
+        debounceTask?.cancel()
+        debounceTask = nil
+
+        continuation?.finish()
+        continuation = nil
+
+        source?.cancel()
+        source = nil
+
+        fileDescriptor = -1
     }
 
     public func changes() throws -> AsyncStream<Void> {
@@ -39,43 +45,15 @@ public final class DirectoryWatcher: @unchecked Sendable {
         let stream = AsyncStream<Void> { continuation in
             streamContinuation = continuation
             continuation.onTermination = { [weak self] _ in
-                self?.stop()
+                guard let self else { return }
+                Task { await self.stop() }
             }
         }
 
         guard let continuation = streamContinuation else { return stream }
 
         do {
-            try performOnQueue {
-                let fd = open(url.path, O_EVTONLY)
-                guard fd >= 0 else {
-                    throw WatcherError.failedToOpen(path: url.path, errno: errno)
-                }
-                fileDescriptor = fd
-
-                self.continuation = continuation
-
-                let source = DispatchSource.makeFileSystemObjectSource(
-                    fileDescriptor: fd,
-                    eventMask: [.write, .rename, .delete],
-                    queue: queue
-                )
-
-                source.setEventHandler { [weak self] in
-                    self?.scheduleDebouncedYield()
-                }
-
-                source.setCancelHandler { [weak self] in
-                    guard let self else { return }
-                    if fileDescriptor >= 0 {
-                        close(fileDescriptor)
-                        fileDescriptor = -1
-                    }
-                }
-
-                self.source = source
-                source.resume()
-            }
+            try start(continuation: continuation)
         } catch {
             continuation.finish()
             throw error
@@ -85,24 +63,24 @@ public final class DirectoryWatcher: @unchecked Sendable {
     }
 
     public func stop() {
-        performOnQueue {
-            debounceTask?.cancel()
-            debounceTask = nil
+        debounceTask?.cancel()
+        debounceTask = nil
 
-            let continuation = continuation
-            self.continuation = nil
-            continuation?.finish()
+        let continuation = continuation
+        self.continuation = nil
+        continuation?.finish()
 
-            source?.cancel()
-            source = nil
+        if let source {
+            self.source = nil
+            fileDescriptor = -1
+            source.cancel()
+            return
         }
-    }
 
-    private func performOnQueue<T>(_ operation: () throws -> T) rethrows -> T {
-        if DispatchQueue.getSpecific(key: queueSpecificKey) == queueSpecificValue {
-            return try operation()
+        if fileDescriptor >= 0 {
+            close(fileDescriptor)
+            fileDescriptor = -1
         }
-        return try queue.sync(execute: operation)
     }
 
     private func scheduleDebouncedYield() {
@@ -123,5 +101,33 @@ public final class DirectoryWatcher: @unchecked Sendable {
             guard !Task.isCancelled else { return }
             continuation.yield(())
         }
+    }
+
+    private func start(continuation: AsyncStream<Void>.Continuation) throws {
+        let fd = open(url.path, O_EVTONLY)
+        guard fd >= 0 else {
+            throw WatcherError.failedToOpen(path: url.path, errno: errno)
+        }
+
+        fileDescriptor = fd
+        self.continuation = continuation
+
+        let source = DispatchSource.makeFileSystemObjectSource(
+            fileDescriptor: fd,
+            eventMask: [.write, .rename, .delete],
+            queue: queue
+        )
+
+        source.setEventHandler { [weak self] in
+            guard let self else { return }
+            Task { await self.scheduleDebouncedYield() }
+        }
+
+        source.setCancelHandler {
+            close(fd)
+        }
+
+        self.source = source
+        source.resume()
     }
 }

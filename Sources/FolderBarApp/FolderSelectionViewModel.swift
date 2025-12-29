@@ -229,26 +229,28 @@ final class FolderSelectionViewModel: ObservableObject {
     private func startWatching(_ url: URL) {
         stopWatching()
         let watcher = DirectoryWatcher(url: url, debounceInterval: 0.2)
-        do {
-            let changes = try watcher.changes()
-            self.watcher = watcher
-            watchTask = Task { [weak self] in
-                guard let self else { return }
+        self.watcher = watcher
+        watchTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                let changes = try await watcher.changes()
                 for await _ in changes {
                     guard selectedFolderURL == url else { continue }
                     refreshItems()
                 }
+            } catch {
+                logger.error("Failed to start watcher: \(String(describing: error))")
+                clearSelection()
             }
-        } catch {
-            logger.error("Failed to start watcher: \(String(describing: error))")
-            clearSelection()
         }
     }
 
     private func stopWatching() {
         watchTask?.cancel()
         watchTask = nil
-        watcher?.stop()
+        if let watcher {
+            Task { await watcher.stop() }
+        }
         watcher = nil
     }
 
