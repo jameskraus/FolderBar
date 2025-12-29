@@ -1,6 +1,6 @@
 import Foundation
 
-public struct FolderChildItem: Identifiable, Hashable {
+public struct FolderChildItem: Identifiable, Hashable, Sendable {
     public let url: URL
     public let name: String
     public let isDirectory: Bool

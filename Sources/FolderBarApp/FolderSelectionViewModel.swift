@@ -248,14 +248,8 @@ final class FolderSelectionViewModel: ObservableObject {
 
     private func scanOnBackground(_ folderURL: URL) async throws -> [FolderChildItem] {
         let scanner = scanner
-        return try await withCheckedThrowingContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
-                do {
-                    try continuation.resume(returning: scanner.scan(folderURL: folderURL))
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
-        }
+        return try await Task.detached(priority: .userInitiated) { [scanner, folderURL] in
+            try scanner.scan(folderURL: folderURL)
+        }.value
     }
 }
