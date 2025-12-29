@@ -1,5 +1,5 @@
-@testable import FolderBarApp
 import AppKit
+@testable import FolderBarApp
 import Foundation
 import XCTest
 

@@ -32,7 +32,7 @@ final class DirectoryWatcherTests: XCTestCase {
             consumer.cancel()
         }
 
-        for index in 0..<10 {
+        for index in 0 ..< 10 {
             let url = tempDirectory.appendingPathComponent("File-\(index).txt")
             XCTAssertTrue(fileManager.createFile(atPath: url.path, contents: Data("x".utf8)))
         }
