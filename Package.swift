@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "FolderBar",
     platforms: [
-        .macOS(.v11)
+        .macOS(.v15)
     ],
     products: [
         .library(

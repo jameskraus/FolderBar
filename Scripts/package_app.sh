@@ -49,6 +49,7 @@ fi
 
 VERSION="${VERSION:-0.1.0}"
 DEFAULT_SPARKLE_FEED_URL="https://raw.githubusercontent.com/jameskraus/FolderBar/main/appcast.xml"
+MIN_SYSTEM_VERSION="${MIN_SYSTEM_VERSION:-15.0}"
 
 SPARKLE_FEED_URL="${SPARKLE_FEED_URL:-}"
 SPARKLE_PUBLIC_ED_KEY="${SPARKLE_PUBLIC_ED_KEY:-}"
@@ -305,6 +306,8 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
   <string>$VERSION</string>
   <key>CFBundleVersion</key>
   <string>$VERSION</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>$MIN_SYSTEM_VERSION</string>
   <key>LSUIElement</key>
   <true/>
   <key>NSHighResolutionCapable</key>
