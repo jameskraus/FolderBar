@@ -10,6 +10,17 @@ let strictConcurrencySwiftSettings: [SwiftSetting] = [
     ])
 ]
 
+let actorDataRaceChecksSwiftSettings: [SwiftSetting] = [
+    .unsafeFlags(
+        [
+            "-enable-actor-data-race-checks"
+        ],
+        .when(configuration: .debug)
+    )
+]
+
+let swiftSettings: [SwiftSetting] = strictConcurrencySwiftSettings + actorDataRaceChecksSwiftSettings
+
 let package = Package(
     name: "FolderBar",
     platforms: [
@@ -35,7 +46,7 @@ let package = Package(
     targets: [
         .target(
             name: "FolderBarCore",
-            swiftSettings: strictConcurrencySwiftSettings
+            swiftSettings: swiftSettings
         ),
         .target(
             name: "FolderBarApp",
@@ -43,14 +54,14 @@ let package = Package(
                 "FolderBarCore",
                 .product(name: "Sparkle", package: "Sparkle")
             ],
-            swiftSettings: strictConcurrencySwiftSettings
+            swiftSettings: swiftSettings
         ),
         .executableTarget(
             name: "FolderBar",
             dependencies: [
                 "FolderBarApp"
             ],
-            swiftSettings: strictConcurrencySwiftSettings,
+            swiftSettings: swiftSettings,
             linkerSettings: [
                 .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])
             ]
@@ -58,12 +69,12 @@ let package = Package(
         .testTarget(
             name: "FolderBarTests",
             dependencies: ["FolderBarCore"],
-            swiftSettings: strictConcurrencySwiftSettings
+            swiftSettings: swiftSettings
         ),
         .testTarget(
             name: "FolderBarAppTests",
             dependencies: ["FolderBarApp"],
-            swiftSettings: strictConcurrencySwiftSettings
+            swiftSettings: swiftSettings
         )
     ]
 )

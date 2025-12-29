@@ -78,6 +78,13 @@ This repo requires SwiftPM / Swift **6.2+**.
 - If `swift --version` is older, install a Swift 6.2 toolchain (Xcode or Swift.org toolchain) and select it for CLI builds.
 - Swift.org toolchains can be selected via `TOOLCHAINS=<toolchain-id>`, where `<toolchain-id>` is the toolchain `CFBundleIdentifier` (from the toolchain `Info.plist`).
 
+### Concurrency diagnostics
+
+Debug builds enable runtime actor data race checks (`-enable-actor-data-race-checks`).
+
+- Verify: `swift build -c debug -v | rg -- "enable-actor-data-race-checks"`
+- Temporarily disable: `swift build -c debug -Xswiftc -disable-actor-data-race-checks` (or `swift test -Xswiftc -disable-actor-data-race-checks`)
+
 ## Release Process
 
 FolderBar releases are automated via `./Scripts/release.sh` (builds, signs, notarizes, creates GitHub release + tag, and updates `appcast.xml`).
