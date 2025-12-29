@@ -1,9 +1,9 @@
 import FolderBarApp
+import SwiftUI
 
 @main
-@MainActor
-enum FolderBarMain {
-    static func main() {
-        FolderBarApplication.run()
+struct FolderBarMain: App {
+    var body: some Scene {
+        FolderBarMenuBarExtraScene()
     }
 }
