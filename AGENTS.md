@@ -71,6 +71,13 @@ After any material app change, rebuild and relaunch the app:
 ./Scripts/compile_and_run.sh
 ```
 
+### Toolchain
+
+This repo requires SwiftPM / Swift **6.2+**.
+
+- If `swift --version` is older, install a Swift 6.2 toolchain (Xcode or Swift.org toolchain) and select it for CLI builds.
+- Swift.org toolchains can be selected via `TOOLCHAINS=<toolchain-id>`, where `<toolchain-id>` is the toolchain `CFBundleIdentifier` (from the toolchain `Info.plist`).
+
 ## Release Process
 
 FolderBar releases are automated via `./Scripts/release.sh` (builds, signs, notarizes, creates GitHub release + tag, and updates `appcast.xml`).
