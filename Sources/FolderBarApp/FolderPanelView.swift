@@ -158,6 +158,20 @@ private struct FooterMenuBar: View {
     }
 }
 
+private struct FolderItemDragPayload: Transferable {
+    let url: URL
+    let suggestedName: String
+
+    static var transferRepresentation: some TransferRepresentation {
+        ProxyRepresentation(exporting: { $0.url })
+            .suggestedFileName { $0.suggestedName }
+
+        DataRepresentation(exportedContentType: .utf8PlainText) { item in
+            Data(item.url.path.utf8)
+        }
+    }
+}
+
 private struct FolderItemRow: View {
     let item: FolderChildItem
     let now: Date
@@ -186,19 +200,7 @@ private struct FolderItemRow: View {
         .padding(.vertical, PanelLayout.rowVerticalPadding)
         .padding(.horizontal, PanelLayout.rowHorizontalPadding)
         .contentShape(Rectangle())
-        .onDrag {
-            let provider = NSItemProvider(item: item.url as NSURL, typeIdentifier: UTType.fileURL.identifier)
-            provider.suggestedName = item.name
-            let pathData = Data(item.url.path.utf8)
-            provider.registerDataRepresentation(
-                forTypeIdentifier: UTType.utf8PlainText.identifier,
-                visibility: .all
-            ) { completion in
-                completion(pathData, nil)
-                return nil
-            }
-            return provider
-        }
+        .draggable(FolderItemDragPayload(url: item.url, suggestedName: item.name))
         .task(id: item.url) { @MainActor in
             thumbnail = nil
             let size = CGSize(width: thumbnailSize, height: thumbnailSize)
