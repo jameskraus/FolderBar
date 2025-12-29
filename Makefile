@@ -4,10 +4,13 @@ PACKAGE_SCRIPT := Scripts/package_app.sh
 COMPILE_RUN_SCRIPT := Scripts/compile_and_run.sh
 CONFIG ?= debug
 
-.PHONY: build package run compile_and_run dev readme_icon format lint
+.PHONY: build test package run compile_and_run dev readme_icon format format_check lint ci
 
 build:
 	swift build -c $(CONFIG)
+
+test:
+	swift test -c $(CONFIG)
 
 package:
 	CONFIG=$(CONFIG) $(PACKAGE_SCRIPT)
@@ -26,5 +29,10 @@ readme_icon:
 format:
 	swiftformat .
 
+format_check:
+	swiftformat --lint .
+
 lint:
 	swiftlint --strict --config .swiftlint.yml
+
+ci: build test format_check lint
