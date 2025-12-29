@@ -40,9 +40,19 @@ final class FolderBarUpdater: NSObject, ObservableObject {
         sparkleController.checkForUpdates(nil)
     }
 
-    func openPrivacyAndSecuritySettings() {
-        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security") else { return }
-        NSWorkspace.shared.open(url)
+    func openAppManagementSettings() {
+        let candidateURLs = [
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_AppManagement",
+            "x-apple.systempreferences:com.apple.preference.security?Privacy",
+            "x-apple.systempreferences:com.apple.preference.security"
+        ]
+
+        for candidate in candidateURLs {
+            guard let url = URL(string: candidate) else { continue }
+            if NSWorkspace.shared.open(url) {
+                return
+            }
+        }
     }
 
     private var feedURL: URL? {

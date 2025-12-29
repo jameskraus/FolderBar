@@ -96,8 +96,8 @@ struct SettingsView: View {
                                         .foregroundColor(.secondary)
                                         .fixedSize(horizontal: false, vertical: true)
 
-                                    Button("Open Privacy & Security…") {
-                                        updater.openPrivacyAndSecuritySettings()
+                                    Button("Open App Management…") {
+                                        updater.openAppManagementSettings()
                                     }
                                     .controlSize(.small)
                                 }
