@@ -1,6 +1,6 @@
 import Foundation
 
-protocol SymbolCatalogLoading: Sendable {
+nonisolated protocol SymbolCatalogLoading: Sendable {
     func loadSymbolNames() -> [String]
 }
 
@@ -10,7 +10,7 @@ struct SystemSymbolCatalog: SymbolCatalogLoading {
     }
 }
 
-protocol Sleeper: Sendable {
+nonisolated protocol Sleeper: Sendable {
     func sleep(nanoseconds: UInt64) async
 }
 

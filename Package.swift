@@ -19,7 +19,17 @@ let actorDataRaceChecksSwiftSettings: [SwiftSetting] = [
     )
 ]
 
-let swiftSettings: [SwiftSetting] = strictConcurrencySwiftSettings + actorDataRaceChecksSwiftSettings
+let baseSwiftSettings: [SwiftSetting] = strictConcurrencySwiftSettings + actorDataRaceChecksSwiftSettings
+
+let defaultMainActorIsolationSwiftSettings: [SwiftSetting] = [
+    .unsafeFlags([
+        "-default-isolation",
+        "MainActor"
+    ])
+]
+
+let appSwiftSettings: [SwiftSetting] = baseSwiftSettings + defaultMainActorIsolationSwiftSettings
+let coreSwiftSettings: [SwiftSetting] = baseSwiftSettings
 
 let package = Package(
     name: "FolderBar",
@@ -46,7 +56,7 @@ let package = Package(
     targets: [
         .target(
             name: "FolderBarCore",
-            swiftSettings: swiftSettings
+            swiftSettings: coreSwiftSettings
         ),
         .target(
             name: "FolderBarApp",
@@ -54,14 +64,14 @@ let package = Package(
                 "FolderBarCore",
                 .product(name: "Sparkle", package: "Sparkle")
             ],
-            swiftSettings: swiftSettings
+            swiftSettings: appSwiftSettings
         ),
         .executableTarget(
             name: "FolderBar",
             dependencies: [
                 "FolderBarApp"
             ],
-            swiftSettings: swiftSettings,
+            swiftSettings: appSwiftSettings,
             linkerSettings: [
                 .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])
             ]
@@ -69,12 +79,12 @@ let package = Package(
         .testTarget(
             name: "FolderBarTests",
             dependencies: ["FolderBarCore"],
-            swiftSettings: swiftSettings
+            swiftSettings: baseSwiftSettings
         ),
         .testTarget(
             name: "FolderBarAppTests",
             dependencies: ["FolderBarApp"],
-            swiftSettings: swiftSettings
+            swiftSettings: baseSwiftSettings
         )
     ]
 )

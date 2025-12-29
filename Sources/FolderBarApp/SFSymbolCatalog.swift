@@ -1,6 +1,6 @@
 import Foundation
 
-enum SFSymbolCatalog {
+nonisolated enum SFSymbolCatalog {
     static func loadSymbolNames() -> [String] {
         let candidates = [
             "/System/Library/CoreServices/CoreGlyphs.bundle/Contents/Resources/symbol_order.plist"

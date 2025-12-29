@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 import QuickLookThumbnailing
 
-protocol ThumbnailGenerating: Sendable {
+nonisolated protocol ThumbnailGenerating: Sendable {
     func generateThumbnail(for url: URL, size: CGSize, scale: CGFloat) async -> NSImage?
 }
 
