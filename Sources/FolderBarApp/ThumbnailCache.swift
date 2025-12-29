@@ -2,6 +2,24 @@ import AppKit
 import Foundation
 import QuickLookThumbnailing
 
+protocol ThumbnailGenerating: Sendable {
+    func generateThumbnail(for url: URL, size: CGSize, scale: CGFloat) async -> NSImage?
+}
+
+private struct QuickLookThumbnailGenerator: ThumbnailGenerating {
+    func generateThumbnail(for url: URL, size: CGSize, scale: CGFloat) async -> NSImage? {
+        let request = QLThumbnailGenerator.Request(
+            fileAt: url,
+            size: size,
+            scale: scale,
+            representationTypes: .thumbnail
+        )
+
+        let representation = try? await QLThumbnailGenerator.shared.generateBestRepresentation(for: request)
+        return representation?.nsImage
+    }
+}
+
 @MainActor
 final class ThumbnailCache {
     static let shared = ThumbnailCache()
@@ -26,13 +44,20 @@ final class ThumbnailCache {
 
     private let cache = NSCache<NSString, NSImage>()
     private var inFlight: [ThumbnailKey: Task<NSImage, Never>] = [:]
+    private let generator: any ThumbnailGenerating
+    private let scaleProvider: @Sendable () -> CGFloat
 
-    private init() {
+    init(
+        generator: any ThumbnailGenerating = QuickLookThumbnailGenerator(),
+        scaleProvider: @escaping @Sendable () -> CGFloat = { NSScreen.main?.backingScaleFactor ?? 2 }
+    ) {
+        self.generator = generator
+        self.scaleProvider = scaleProvider
         cache.countLimit = 512
     }
 
     func thumbnail(for url: URL, size: CGSize) async -> NSImage {
-        let scale = NSScreen.main?.backingScaleFactor ?? 2
+        let scale = scaleProvider()
         let key = ThumbnailKey(url: url, size: size, scale: scale)
 
         if let cached = cache.object(forKey: key.nsCacheKey) {
@@ -43,16 +68,9 @@ final class ThumbnailCache {
             return await task.value
         }
 
-        let task = Task { [url, size, scale] in
-            let request = QLThumbnailGenerator.Request(
-                fileAt: url,
-                size: size,
-                scale: scale,
-                representationTypes: .thumbnail
-            )
-
-            let representation = try? await QLThumbnailGenerator.shared.generateBestRepresentation(for: request)
-            let image = representation?.nsImage ?? Self.fallbackIcon(for: url, size: size)
+        let task = Task { [generator, url, size, scale] in
+            let generated = await generator.generateThumbnail(for: url, size: size, scale: scale)
+            let image = generated ?? Self.fallbackIcon(for: url, size: size)
             image.size = size
             return image
         }

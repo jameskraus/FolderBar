@@ -37,6 +37,17 @@ final class FolderScannerTests: XCTestCase {
         XCTAssertEqual(itemsByName["A.txt"]?.isDirectory, false)
     }
 
+    func testResolvedCreationDateFallsBackToModificationDate() {
+        let modificationDate = Date()
+        let resolved = FolderScanner.resolvedCreationDate(creationDate: nil, contentModificationDate: modificationDate)
+        XCTAssertEqual(resolved, modificationDate)
+    }
+
+    func testResolvedCreationDateFallsBackToDistantPastWhenDatesAreMissing() {
+        let resolved = FolderScanner.resolvedCreationDate(creationDate: nil, contentModificationDate: nil)
+        XCTAssertEqual(resolved, Date.distantPast)
+    }
+
     func testFolderConfigResolvedDisplayNameUsesFallback() {
         let url = URL(fileURLWithPath: "/tmp/Photos")
         let config = FolderConfig(folderURL: url)
