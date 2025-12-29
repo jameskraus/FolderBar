@@ -204,8 +204,8 @@ final class FolderSelectionViewModel: ObservableObject {
             _ = NSApp.setActivationPolicy(.regular)
         }
         NSApp.unhide(nil)
-        NSRunningApplication.current.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
-        NSApp.activate(ignoringOtherApps: true)
+        NSRunningApplication.current.activate(options: [.activateAllWindows])
+        NSApp.activate()
     }
 
     private func restoreActivationPolicyIfNeeded() {

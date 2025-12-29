@@ -81,7 +81,7 @@ final class MenuBarPanelController: NSObject {
         positionPanel(relativeTo: button)
 
         button.state = .on
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
         panel.makeKeyAndOrderFront(nil)
         onShow?()
         installMonitors()
