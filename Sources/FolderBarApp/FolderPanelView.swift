@@ -107,7 +107,7 @@ private struct SelectedFolderView: View {
                             }
                         }
                         .frame(height: PanelLayout.listHeight)
-                        .onChange(of: scrollToken) { _ in
+                        .onChange(of: scrollToken) {
                             proxy.scrollTo(ScrollAnchor.top, anchor: .top)
                         }
                     }
@@ -199,18 +199,10 @@ private struct FolderItemRow: View {
             }
             return provider
         }
-        .onAppear {
-            let size = CGSize(width: thumbnailSize, height: thumbnailSize)
-            ThumbnailCache.shared.requestThumbnail(for: item.url, size: size) { image in
-                thumbnail = image
-            }
-        }
-        .onChange(of: item.url) { _ in
+        .task(id: item.url) { @MainActor in
             thumbnail = nil
             let size = CGSize(width: thumbnailSize, height: thumbnailSize)
-            ThumbnailCache.shared.requestThumbnail(for: item.url, size: size) { image in
-                thumbnail = image
-            }
+            thumbnail = await ThumbnailCache.shared.thumbnail(for: item.url, size: size)
         }
         .onHover { hovering in
             guard hovering != isHovering else { return }

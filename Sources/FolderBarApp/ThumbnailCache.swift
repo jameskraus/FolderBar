@@ -1,35 +1,49 @@
 import AppKit
 import Foundation
-@preconcurrency import QuickLookThumbnailing
+import QuickLookThumbnailing
 
 @MainActor
 final class ThumbnailCache {
     static let shared = ThumbnailCache()
 
-    private let cache = NSCache<NSURL, NSImage>()
-    private var inFlight: [URL: [(NSImage) -> Void]] = [:]
+    private struct ThumbnailKey: Hashable {
+        let url: URL
+        let width: Int
+        let height: Int
+        let scaleTimes100: Int
+
+        init(url: URL, size: CGSize, scale: CGFloat) {
+            self.url = url
+            width = Int(size.width.rounded())
+            height = Int(size.height.rounded())
+            scaleTimes100 = Int((scale * 100).rounded())
+        }
+
+        var nsCacheKey: NSString {
+            "\(url.path)|\(width)x\(height)@\(scaleTimes100)" as NSString
+        }
+    }
+
+    private let cache = NSCache<NSString, NSImage>()
+    private var inFlight: [ThumbnailKey: Task<NSImage, Never>] = [:]
 
     private init() {
         cache.countLimit = 512
     }
 
-    func requestThumbnail(for url: URL, size: CGSize, completion: @escaping (NSImage) -> Void) {
-        if let cached = cache.object(forKey: url as NSURL) {
-            completion(cached)
-            return
-        }
-
-        if var callbacks = inFlight[url] {
-            callbacks.append(completion)
-            inFlight[url] = callbacks
-            return
-        }
-
-        inFlight[url] = [completion]
-
+    func thumbnail(for url: URL, size: CGSize) async -> NSImage {
         let scale = NSScreen.main?.backingScaleFactor ?? 2
-        Task { @MainActor [weak self, url, size] in
-            guard let self else { return }
+        let key = ThumbnailKey(url: url, size: size, scale: scale)
+
+        if let cached = cache.object(forKey: key.nsCacheKey) {
+            return cached
+        }
+
+        if let task = inFlight[key] {
+            return await task.value
+        }
+
+        let task = Task { [url, size, scale] in
             let request = QLThumbnailGenerator.Request(
                 fileAt: url,
                 size: size,
@@ -38,15 +52,19 @@ final class ThumbnailCache {
             )
 
             let representation = try? await QLThumbnailGenerator.shared.generateBestRepresentation(for: request)
-            let image = representation?.nsImage ?? fallbackIcon(for: url, size: size)
+            let image = representation?.nsImage ?? Self.fallbackIcon(for: url, size: size)
             image.size = size
-            cache.setObject(image, forKey: url as NSURL)
-            let callbacks = inFlight.removeValue(forKey: url) ?? []
-            callbacks.forEach { $0(image) }
+            return image
         }
+
+        inFlight[key] = task
+        let image = await task.value
+        inFlight[key] = nil
+        cache.setObject(image, forKey: key.nsCacheKey)
+        return image
     }
 
-    private func fallbackIcon(for url: URL, size: CGSize) -> NSImage {
+    private static func fallbackIcon(for url: URL, size: CGSize) -> NSImage {
         let image = NSWorkspace.shared.icon(forFile: url.path)
         image.size = size
         return image
