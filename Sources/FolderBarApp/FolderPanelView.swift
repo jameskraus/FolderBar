@@ -229,7 +229,8 @@ private struct FolderItemRow: View {
             } label: {
                 Image(systemName: "ellipsis")
                     .font(.system(size: 14, weight: .semibold))
-                    .frame(width: 24, height: 24)
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
             }
             .menuIndicator(.hidden)
             .buttonStyle(.plain)
