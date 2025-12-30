@@ -147,14 +147,16 @@ private struct FooterMenuBar: View {
                     NSApplication.shared.terminate(nil)
                 }
             } label: {
-                Image(systemName: "ellipsis.circle")
+                Image(systemName: "gearshape")
                     .font(.system(size: 16, weight: .semibold))
                     .frame(width: 24, height: 24)
             }
+            .menuIndicator(.hidden)
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, PanelLayout.headerHorizontalPadding)
-        .padding(.top, 4)
+        .frame(height: PanelLayout.footerHeight)
+        .padding(.leading, PanelLayout.headerHorizontalPadding)
+        .padding(.trailing, PanelLayout.footerTrailingPadding)
     }
 }
 

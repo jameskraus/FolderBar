@@ -7,6 +7,7 @@ enum PanelLayout {
     static let rowVerticalPadding: CGFloat = 8
     static let rowHorizontalPadding: CGFloat = 12
     static let headerHorizontalPadding: CGFloat = 12
+    static let footerTrailingPadding: CGFloat = 8
     static let topPadding: CGFloat = 8
     static let bottomPadding: CGFloat = 8
     static let headerSpacing: CGFloat = 4
