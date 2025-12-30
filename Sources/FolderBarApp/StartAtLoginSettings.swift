@@ -1,14 +1,16 @@
 import Foundation
 import ServiceManagement
 
-nonisolated protocol StartAtLoginManaging: Sendable {
+@MainActor
+protocol StartAtLoginManaging {
     var status: SMAppService.Status { get }
     func register() throws
     func unregister() throws
     func openSystemSettingsLoginItems()
 }
 
-nonisolated struct MainAppStartAtLoginManager: StartAtLoginManaging {
+@MainActor
+struct MainAppStartAtLoginManager: StartAtLoginManaging {
     var status: SMAppService.Status { SMAppService.mainApp.status }
 
     func register() throws {
@@ -26,35 +28,20 @@ nonisolated struct MainAppStartAtLoginManager: StartAtLoginManaging {
 
 @MainActor
 final class StartAtLoginSettings: ObservableObject {
-    @Published private(set) var isEnabled: Bool
     @Published private(set) var status: SMAppService.Status
     @Published private(set) var errorMessage: String?
 
     private let manager: any StartAtLoginManaging
-    private let userDefaults: UserDefaults
-    private let userDefaultsKey = "StartAtLoginEnabled"
 
     init(
-        manager: any StartAtLoginManaging = MainAppStartAtLoginManager(),
-        userDefaults: UserDefaults = .standard
+        manager: any StartAtLoginManaging = MainAppStartAtLoginManager()
     ) {
         self.manager = manager
-        self.userDefaults = userDefaults
-
-        let initialStatus = manager.status
-        status = initialStatus
-        isEnabled = Self.isEnabled(status: initialStatus)
-
-        if userDefaults.object(forKey: userDefaultsKey) == nil {
-            userDefaults.set(isEnabled, forKey: userDefaultsKey)
-        } else {
-            reconcileWithStoredIntentIfNeeded()
-        }
+        status = manager.status
     }
 
     func refresh() {
         status = manager.status
-        isEnabled = Self.isEnabled(status: status)
     }
 
     func setEnabled(_ enabled: Bool) {
@@ -62,13 +49,16 @@ final class StartAtLoginSettings: ObservableObject {
 
         do {
             if enabled {
-                try manager.register()
+                if !isEnabled {
+                    try manager.register()
+                }
             } else {
-                try manager.unregister()
+                if isEnabled {
+                    try manager.unregister()
+                }
             }
-            userDefaults.set(enabled, forKey: userDefaultsKey)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = Self.userFacingErrorMessage(error)
         }
 
         refresh()
@@ -78,23 +68,7 @@ final class StartAtLoginSettings: ObservableObject {
         manager.openSystemSettingsLoginItems()
     }
 
-    var needsApproval: Bool {
-        status == .requiresApproval
-    }
-
-    var isSupported: Bool {
-        status != .notFound
-    }
-
-    private func reconcileWithStoredIntentIfNeeded() {
-        guard isSupported else { return }
-
-        let desired = userDefaults.bool(forKey: userDefaultsKey)
-        guard desired != isEnabled else { return }
-        setEnabled(desired)
-    }
-
-    private static func isEnabled(status: SMAppService.Status) -> Bool {
+    var isEnabled: Bool {
         switch status {
         case .enabled, .requiresApproval:
             return true
@@ -103,5 +77,21 @@ final class StartAtLoginSettings: ObservableObject {
         @unknown default:
             return false
         }
+    }
+
+    var needsApproval: Bool {
+        status == .requiresApproval
+    }
+
+    var isStatusIndeterminate: Bool {
+        status == .notFound
+    }
+
+    private static func userFacingErrorMessage(_ error: Error) -> String {
+        let nsError = error as NSError
+        if let reason = nsError.userInfo[NSLocalizedFailureReasonErrorKey] as? String, !reason.isEmpty {
+            return reason
+        }
+        return nsError.localizedDescription
     }
 }

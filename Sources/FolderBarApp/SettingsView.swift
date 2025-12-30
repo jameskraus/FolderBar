@@ -79,25 +79,24 @@ struct SettingsView: View {
                                 )
                             )
                             .toggleStyle(.switch)
-                            .disabled(!startAtLogin.isSupported)
 
                             if startAtLogin.needsApproval {
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text("Requires approval in System Settings → General → Login Items.")
-                                        .font(.system(size: 11))
-                                        .foregroundColor(.secondary)
-                                        .fixedSize(horizontal: false, vertical: true)
-
-                                    Button("Open Login Items…") {
-                                        startAtLogin.openSystemSettingsLoginItems()
-                                    }
-                                    .controlSize(.small)
-                                }
-                            } else if !startAtLogin.isSupported {
-                                Text("Start at login is unavailable for this build.")
+                                Text("Requires approval in System Settings → General → Login Items & Extensions.")
                                     .font(.system(size: 11))
                                     .foregroundColor(.secondary)
                                     .fixedSize(horizontal: false, vertical: true)
+                            } else if startAtLogin.isStatusIndeterminate {
+                                Text("macOS can’t report the current Start at login state yet. You can still enable it here, or verify it in System Settings → General → Login Items & Extensions.")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+
+                            if startAtLogin.needsApproval || startAtLogin.isStatusIndeterminate || startAtLogin.errorMessage != nil {
+                                Button("Open Login Items…") {
+                                    startAtLogin.openSystemSettingsLoginItems()
+                                }
+                                .controlSize(.small)
                             }
 
                             if let errorMessage = startAtLogin.errorMessage {
@@ -191,6 +190,9 @@ struct SettingsView: View {
             IconPickerView(iconSettings: iconSettings)
         }
         .onAppear {
+            startAtLogin.refresh()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             startAtLogin.refresh()
         }
     }

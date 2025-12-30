@@ -4,49 +4,55 @@ import XCTest
 
 @MainActor
 final class StartAtLoginSettingsTests: XCTestCase {
-    func testInit_setsDefaultsToCurrentSystemState() async {
-        let suiteName = "FolderBarTests.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defaults.removePersistentDomain(forName: suiteName)
-
+    func testInit_reflectsCurrentSystemState() async {
         let manager = FakeStartAtLoginManager(status: .enabled)
-        let settings = StartAtLoginSettings(manager: manager, userDefaults: defaults)
+        let settings = StartAtLoginSettings(manager: manager)
 
         XCTAssertTrue(settings.isEnabled)
-        XCTAssertTrue(defaults.bool(forKey: "StartAtLoginEnabled"))
     }
 
-    func testSetEnabled_registersAndPersistsOnSuccess() async {
-        let suiteName = "FolderBarTests.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defaults.removePersistentDomain(forName: suiteName)
-
+    func testSetEnabled_registersOnSuccess() async {
         let manager = FakeStartAtLoginManager(status: .notRegistered)
-        let settings = StartAtLoginSettings(manager: manager, userDefaults: defaults)
+        let settings = StartAtLoginSettings(manager: manager)
 
         settings.setEnabled(true)
 
         XCTAssertEqual(manager.registerCallCount, 1)
-        XCTAssertTrue(defaults.bool(forKey: "StartAtLoginEnabled"))
         XCTAssertTrue(settings.isEnabled)
     }
 
     func testSetEnabled_surfacesErrorsAndRevertsState() async {
-        let suiteName = "FolderBarTests.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defaults.removePersistentDomain(forName: suiteName)
-
         let manager = FakeStartAtLoginManager(status: .notRegistered)
         manager.registerError = TestError.example
 
-        let settings = StartAtLoginSettings(manager: manager, userDefaults: defaults)
+        let settings = StartAtLoginSettings(manager: manager)
 
         settings.setEnabled(true)
 
         XCTAssertEqual(manager.registerCallCount, 1)
         XCTAssertFalse(settings.isEnabled)
         XCTAssertNotNil(settings.errorMessage)
-        XCTAssertFalse(defaults.bool(forKey: "StartAtLoginEnabled"))
+    }
+
+    func testNotFound_allowsEnableAttempt() async {
+        let manager = FakeStartAtLoginManager(status: .notFound)
+        let settings = StartAtLoginSettings(manager: manager)
+
+        XCTAssertFalse(settings.isEnabled)
+        XCTAssertTrue(settings.isStatusIndeterminate)
+
+        settings.setEnabled(true)
+
+        XCTAssertEqual(manager.registerCallCount, 1)
+        XCTAssertTrue(settings.isEnabled)
+    }
+
+    func testRequiresApproval_mapsToEnabled() async {
+        let manager = FakeStartAtLoginManager(status: .requiresApproval)
+        let settings = StartAtLoginSettings(manager: manager)
+
+        XCTAssertTrue(settings.isEnabled)
+        XCTAssertTrue(settings.needsApproval)
     }
 }
 
@@ -54,7 +60,8 @@ private enum TestError: Error {
     case example
 }
 
-private final class FakeStartAtLoginManager: @unchecked Sendable, StartAtLoginManaging {
+@MainActor
+private final class FakeStartAtLoginManager: StartAtLoginManaging {
     var status: SMAppService.Status { statusValue }
 
     private(set) var registerCallCount: Int = 0
