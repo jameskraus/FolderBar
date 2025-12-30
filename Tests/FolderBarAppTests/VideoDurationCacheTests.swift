@@ -24,8 +24,8 @@ final class VideoDurationCacheTests: XCTestCase {
         let second = await cache.durationText(for: url)
         let callCount = await loader.getCallCount()
 
-        XCTAssertEqual(first, "00m12s")
-        XCTAssertEqual(second, "00m12s")
+        XCTAssertEqual(first, "12s")
+        XCTAssertEqual(second, "12s")
         XCTAssertEqual(callCount, 1)
     }
 
@@ -41,6 +41,26 @@ final class VideoDurationCacheTests: XCTestCase {
         XCTAssertNil(first)
         XCTAssertNil(second)
         XCTAssertEqual(callCount, 1)
+    }
+
+    func testDurationText_video_formatsMinutesSeconds() async {
+        let loader = FakeVideoDurationLoader(nextValues: [TimeInterval(3 * 60 + 4)])
+        let cache = VideoDurationCache(loader: loader)
+        let url = URL(fileURLWithPath: "/tmp/video.mp4")
+
+        let text = await cache.durationText(for: url)
+
+        XCTAssertEqual(text, "3m04s")
+    }
+
+    func testDurationText_video_formatsHoursMinutesSeconds() async {
+        let loader = FakeVideoDurationLoader(nextValues: [TimeInterval(1 * 3600 + 24 * 60 + 7)])
+        let cache = VideoDurationCache(loader: loader)
+        let url = URL(fileURLWithPath: "/tmp/video.mp4")
+
+        let text = await cache.durationText(for: url)
+
+        XCTAssertEqual(text, "1h24m07s")
     }
 }
 

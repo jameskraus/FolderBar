@@ -75,10 +75,21 @@ final class VideoDurationCache {
         guard let seconds, seconds.isFinite, seconds > 0 else { return nil }
 
         let totalSeconds = Int(seconds.rounded())
-        let minutes = totalSeconds / 60
+        guard totalSeconds > 0 else { return nil }
+
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
         let remainingSeconds = totalSeconds % 60
 
-        return String(format: "%02dm%02ds", minutes, remainingSeconds)
+        if hours > 0 {
+            return "\(hours)h\(String(format: "%02d", minutes))m\(String(format: "%02d", remainingSeconds))s"
+        }
+
+        if minutes > 0 {
+            return "\(minutes)m\(String(format: "%02d", remainingSeconds))s"
+        }
+
+        return "\(remainingSeconds)s"
     }
 
     private static func isVideoFile(_ url: URL) -> Bool {
