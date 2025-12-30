@@ -40,11 +40,13 @@ final class StartAtLoginSettingsTests: XCTestCase {
 
         XCTAssertFalse(settings.isEnabled)
         XCTAssertTrue(settings.isStatusIndeterminate)
+        XCTAssertFalse(settings.shouldShowIndeterminateGuidance)
 
         settings.setEnabled(true)
 
         XCTAssertEqual(manager.registerCallCount, 1)
         XCTAssertTrue(settings.isEnabled)
+        XCTAssertFalse(settings.shouldShowIndeterminateGuidance)
     }
 
     func testRequiresApproval_mapsToEnabled() async {
@@ -53,6 +55,22 @@ final class StartAtLoginSettingsTests: XCTestCase {
 
         XCTAssertTrue(settings.isEnabled)
         XCTAssertTrue(settings.needsApproval)
+    }
+
+    func testNotFound_showsIndeterminateGuidanceAfterEnableAttemptIfStatusRemainsNotFound() async {
+        let manager = FakeStartAtLoginManager(status: .notFound)
+        manager.statusAfterRegister = .notFound
+
+        let settings = StartAtLoginSettings(manager: manager)
+
+        XCTAssertTrue(settings.isStatusIndeterminate)
+        XCTAssertFalse(settings.shouldShowIndeterminateGuidance)
+
+        settings.setEnabled(true)
+
+        XCTAssertEqual(manager.registerCallCount, 1)
+        XCTAssertTrue(settings.isStatusIndeterminate)
+        XCTAssertTrue(settings.shouldShowIndeterminateGuidance)
     }
 }
 
@@ -69,6 +87,7 @@ private final class FakeStartAtLoginManager: StartAtLoginManaging {
 
     var registerError: Error?
     var unregisterError: Error?
+    var statusAfterRegister: SMAppService.Status = .enabled
 
     private var statusValue: SMAppService.Status
 
@@ -79,7 +98,7 @@ private final class FakeStartAtLoginManager: StartAtLoginManaging {
     func register() throws {
         registerCallCount += 1
         if let registerError { throw registerError }
-        statusValue = .enabled
+        statusValue = statusAfterRegister
     }
 
     func unregister() throws {

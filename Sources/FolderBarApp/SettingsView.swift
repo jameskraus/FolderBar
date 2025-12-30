@@ -85,14 +85,14 @@ struct SettingsView: View {
                                     .font(.system(size: 11))
                                     .foregroundColor(.secondary)
                                     .fixedSize(horizontal: false, vertical: true)
-                            } else if startAtLogin.isStatusIndeterminate {
-                                Text("macOS can’t report the current Start at login state yet. You can still enable it here, or verify it in System Settings → General → Login Items & Extensions.")
+                            } else if startAtLogin.shouldShowIndeterminateGuidance, startAtLogin.errorMessage == nil {
+                                Text("macOS hasn’t reported the current Start at login state yet. If enabling doesn’t stick, verify it in System Settings → General → Login Items & Extensions.")
                                     .font(.system(size: 11))
                                     .foregroundColor(.secondary)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
 
-                            if startAtLogin.needsApproval || startAtLogin.isStatusIndeterminate || startAtLogin.errorMessage != nil {
+                            if startAtLogin.needsApproval || startAtLogin.shouldShowIndeterminateGuidance || startAtLogin.errorMessage != nil {
                                 Button("Open Login Items…") {
                                     startAtLogin.openSystemSettingsLoginItems()
                                 }

@@ -30,22 +30,32 @@ struct MainAppStartAtLoginManager: StartAtLoginManaging {
 final class StartAtLoginSettings: ObservableObject {
     @Published private(set) var status: SMAppService.Status
     @Published private(set) var errorMessage: String?
+    @Published private(set) var shouldShowIndeterminateGuidance = false
 
     private let manager: any StartAtLoginManaging
+    private var didAttemptEnable = false
 
     init(
         manager: any StartAtLoginManaging = MainAppStartAtLoginManager()
     ) {
         self.manager = manager
         status = manager.status
+        updateDerivedState()
     }
 
     func refresh() {
         status = manager.status
+
+        if status != .notFound {
+            didAttemptEnable = false
+        }
+
+        updateDerivedState()
     }
 
     func setEnabled(_ enabled: Bool) {
         errorMessage = nil
+        didAttemptEnable = enabled
 
         do {
             if enabled {
@@ -85,6 +95,10 @@ final class StartAtLoginSettings: ObservableObject {
 
     var isStatusIndeterminate: Bool {
         status == .notFound
+    }
+
+    private func updateDerivedState() {
+        shouldShowIndeterminateGuidance = didAttemptEnable && status == .notFound
     }
 
     private static func userFacingErrorMessage(_ error: Error) -> String {
