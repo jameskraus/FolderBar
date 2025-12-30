@@ -183,25 +183,57 @@ private struct FolderItemRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(nsImage: thumbnail ?? icon)
-                .resizable()
-                .frame(width: thumbnailSize, height: thumbnailSize)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(item.name)
-                    .font(.system(size: 13, weight: .semibold))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                Text(metadataText)
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
+            HStack(spacing: 10) {
+                Image(nsImage: thumbnail ?? icon)
+                    .resizable()
+                    .frame(width: thumbnailSize, height: thumbnailSize)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.name)
+                        .font(.system(size: 13, weight: .semibold))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Text(metadataText)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
             }
-            Spacer(minLength: 0)
+            .contentShape(Rectangle())
+            .draggable(FolderItemDragPayload(url: item.url, suggestedName: item.name))
+            .onHover { hovering in
+                guard hovering != isHovering else { return }
+                isHovering = hovering
+                if hovering {
+                    NSCursor.openHand.push()
+                } else {
+                    NSCursor.pop()
+                }
+            }
+            .onDisappear {
+                if isHovering {
+                    isHovering = false
+                    NSCursor.pop()
+                }
+            }
+
+            Menu {
+                Button("Reveal in Finder") {
+                    revealInFinder()
+                }
+                Button("Copy to Clipboard") {
+                    copyToClipboard()
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 14, weight: .semibold))
+                    .frame(width: 24, height: 24)
+            }
+            .menuIndicator(.hidden)
+            .buttonStyle(.plain)
         }
         .padding(.vertical, PanelLayout.rowVerticalPadding)
         .padding(.horizontal, PanelLayout.rowHorizontalPadding)
-        .contentShape(Rectangle())
-        .draggable(FolderItemDragPayload(url: item.url, suggestedName: item.name))
         .task(id: item.url) { @MainActor in
             thumbnail = nil
             videoDurationText = nil
@@ -212,21 +244,6 @@ private struct FolderItemRow: View {
 
             thumbnail = await loadedThumbnail
             videoDurationText = await loadedVideoDurationText
-        }
-        .onHover { hovering in
-            guard hovering != isHovering else { return }
-            isHovering = hovering
-            if hovering {
-                NSCursor.openHand.push()
-            } else {
-                NSCursor.pop()
-            }
-        }
-        .onDisappear {
-            if isHovering {
-                isHovering = false
-                NSCursor.pop()
-            }
         }
     }
 
@@ -284,4 +301,18 @@ private struct FolderItemRow: View {
         formatter.isAdaptive = true
         return formatter
     }()
+
+    private func revealInFinder() {
+        NSWorkspace.shared.activateFileViewerSelecting([item.url])
+    }
+
+    private func copyToClipboard() {
+        let pasteboard = NSPasteboard.general
+        let pbItem = NSPasteboardItem()
+        pbItem.setString(item.url.absoluteString, forType: .fileURL)
+        pbItem.setString(item.url.path, forType: .string)
+
+        pasteboard.clearContents()
+        pasteboard.writeObjects([pbItem])
+    }
 }
