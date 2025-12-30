@@ -177,6 +177,7 @@ private struct FolderItemRow: View {
     let now: Date
     @State private var isHovering = false
     @State private var thumbnail: NSImage?
+    @State private var videoDurationText: String?
 
     private let thumbnailSize: CGFloat = PanelLayout.thumbnailSize
 
@@ -203,8 +204,14 @@ private struct FolderItemRow: View {
         .draggable(FolderItemDragPayload(url: item.url, suggestedName: item.name))
         .task(id: item.url) { @MainActor in
             thumbnail = nil
+            videoDurationText = nil
             let size = CGSize(width: thumbnailSize, height: thumbnailSize)
-            thumbnail = await ThumbnailCache.shared.thumbnail(for: item.url, size: size)
+
+            async let loadedThumbnail = ThumbnailCache.shared.thumbnail(for: item.url, size: size)
+            async let loadedVideoDurationText = VideoDurationCache.shared.durationText(for: item.url)
+
+            thumbnail = await loadedThumbnail
+            videoDurationText = await loadedVideoDurationText
         }
         .onHover { hovering in
             guard hovering != isHovering else { return }
@@ -233,6 +240,9 @@ private struct FolderItemRow: View {
         var parts: [String] = [relativeDateText]
         if let sizeText {
             parts.append(sizeText)
+        }
+        if let videoDurationText {
+            parts.append(videoDurationText)
         }
         return parts.joined(separator: "  ")
     }
