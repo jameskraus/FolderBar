@@ -81,7 +81,7 @@ public struct FolderBarMenuBarExtraScene: Scene {
 
     public var body: some Scene {
         MenuBarExtra {
-            FolderPanelView(
+            MenuBarPanelContainer(
                 viewModel: services.viewModel,
                 updater: services.updater,
                 onOpenSettings: { services.openSettings() }
@@ -93,5 +93,30 @@ public struct FolderBarMenuBarExtraScene: Scene {
             Image(systemName: services.resolvedSymbolName)
         }
         .menuBarExtraStyle(.window)
+    }
+}
+
+private struct MenuBarPanelContainer: View {
+    @ObservedObject var viewModel: FolderSelectionViewModel
+    @ObservedObject var updater: FolderBarUpdater
+    let onOpenSettings: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        FolderPanelView(
+            viewModel: viewModel,
+            updater: updater,
+            onOpenSettings: onOpenSettings,
+            onRequestDismiss: dismissMenuBarExtra
+        )
+    }
+
+    private func dismissMenuBarExtra() {
+        let window = NSApp.keyWindow
+        dismiss()
+        if let window, window.level != .normal {
+            window.orderOut(nil)
+        }
     }
 }

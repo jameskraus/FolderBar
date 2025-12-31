@@ -7,6 +7,19 @@ struct FolderPanelView: View {
     @ObservedObject var viewModel: FolderSelectionViewModel
     @ObservedObject var updater: FolderBarUpdater
     let onOpenSettings: () -> Void
+    let onRequestDismiss: (() -> Void)?
+
+    init(
+        viewModel: FolderSelectionViewModel,
+        updater: FolderBarUpdater,
+        onOpenSettings: @escaping () -> Void,
+        onRequestDismiss: (() -> Void)? = nil
+    ) {
+        _viewModel = ObservedObject(wrappedValue: viewModel)
+        _updater = ObservedObject(wrappedValue: updater)
+        self.onOpenSettings = onOpenSettings
+        self.onRequestDismiss = onRequestDismiss
+    }
 
     var body: some View {
         Group {
@@ -17,7 +30,8 @@ struct FolderPanelView: View {
                     scrollToken: viewModel.scrollToken,
                     now: viewModel.now,
                     updater: updater,
-                    onOpenSettings: onOpenSettings
+                    onOpenSettings: onOpenSettings,
+                    onRequestDismiss: onRequestDismiss
                 )
             } else {
                 EmptyStateView(
@@ -67,6 +81,7 @@ private struct SelectedFolderView: View {
     let now: Date
     @ObservedObject var updater: FolderBarUpdater
     let onOpenSettings: () -> Void
+    let onRequestDismiss: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: PanelLayout.headerSpacing) {
@@ -99,7 +114,7 @@ private struct SelectedFolderView: View {
                                     .id(ScrollAnchor.top)
                                 let lastItemID = items.last?.id
                                 ForEach(items) { item in
-                                    FolderItemRow(item: item, now: now)
+                                    FolderItemRow(item: item, now: now, onRequestDismiss: onRequestDismiss)
                                     if item.id != lastItemID {
                                         Divider()
                                     }
@@ -177,6 +192,7 @@ private struct FolderItemDragPayload: Transferable {
 private struct FolderItemRow: View {
     let item: FolderChildItem
     let now: Date
+    let onRequestDismiss: (() -> Void)?
     @State private var isHovering = false
     @State private var thumbnail: NSImage?
     @State private var videoDurationText: String?
@@ -306,7 +322,32 @@ private struct FolderItemRow: View {
     }()
 
     private func revealInFinder() {
-        NSWorkspace.shared.activateFileViewerSelecting([item.url])
+        onRequestDismiss?()
+        let targetURL = resolveRevealURL()
+        NSWorkspace.shared.activateFileViewerSelecting([targetURL])
+        activateFinderIfNeeded()
+    }
+
+    private func resolveRevealURL() -> URL {
+        if FileManager.default.fileExists(atPath: item.url.path) {
+            return item.url
+        }
+        return item.url.deletingLastPathComponent()
+    }
+
+    private func activateFinderIfNeeded(retries: Int = 2) {
+        let bundleIdentifier = "com.apple.finder"
+        let options: NSApplication.ActivationOptions = [
+            .activateAllWindows
+        ]
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            if let finder = NSRunningApplication.runningApplications(withBundleIdentifier: bundleIdentifier).first {
+                finder.activate(options: options)
+            } else if retries > 0 {
+                activateFinderIfNeeded(retries: retries - 1)
+            }
+        }
     }
 
     private func copyToClipboard() {

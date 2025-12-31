@@ -38,6 +38,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 onOpenSettings: { [weak self] in
                     self?.folderSelectionViewModel.requestClosePopover?()
                     self?.settingsWindowController.show()
+                },
+                onRequestDismiss: { [weak folderSelectionViewModel] in
+                    folderSelectionViewModel?.requestClosePopover?()
                 }
             )
         ),
