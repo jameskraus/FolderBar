@@ -62,7 +62,7 @@ make lint
 
 This appends a call to the repo-managed hook into your local `.git/hooks/pre-push` (so existing hooks like `bd` keep working).
 
-### Release build + signing
+## Release build + signing
 
 Both `Scripts/compile_and_run.sh` and `Scripts/release.sh` source `.env` and `.env.local` automatically (local overrides).
 
