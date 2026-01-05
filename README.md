@@ -10,6 +10,10 @@ Quickly drag-and-drop files from an important folder right from your menu bar.
 
 https://github.com/user-attachments/assets/5ce4c1cf-1b59-431a-8e02-6a9e056ec85a
 
+## Install
+
+Download the latest release DMG from https://github.com/jameskraus/FolderBar/releases/latest, open it, and drag FolderBar.app into your Applications folder.
+
 ## Agent notes
 
 Agent-oriented docs (product goals/non-goals, project structure, release workflow) live in `AGENTS.md`.
