@@ -22,7 +22,7 @@ Agent-oriented docs (product goals/non-goals, project structure, release workflo
 
 ## Building
 
-### Development builds
+### Development build
 
 FolderBar runs as a packaged `.app` during development (Sparkle and signing behave differently outside a real bundle).
 
@@ -62,7 +62,7 @@ make lint
 
 This appends a call to the repo-managed hook into your local `.git/hooks/pre-push` (so existing hooks like `bd` keep working).
 
-### Release builds + signing
+### Release build + signing
 
 Both `Scripts/compile_and_run.sh` and `Scripts/release.sh` source `.env` and `.env.local` automatically (local overrides).
 
