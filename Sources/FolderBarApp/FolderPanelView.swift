@@ -236,12 +236,7 @@ private struct FolderItemRow: View {
             }
 
             Menu {
-                Button("Reveal in Finder") {
-                    revealInFinder()
-                }
-                Button("Copy to Clipboard") {
-                    copyToClipboard()
-                }
+                menuItems
             } label: {
                 Image(systemName: "ellipsis")
                     .font(.system(size: 14, weight: .semibold))
@@ -250,6 +245,10 @@ private struct FolderItemRow: View {
             }
             .menuIndicator(.hidden)
             .buttonStyle(.plain)
+        }
+        .contentShape(Rectangle())
+        .contextMenu {
+            menuItems
         }
         .padding(.vertical, PanelLayout.rowVerticalPadding)
         .padding(.horizontal, PanelLayout.rowHorizontalPadding)
@@ -299,6 +298,16 @@ private struct FolderItemRow: View {
         formatter.unitsStyle = .abbreviated
         return formatter
     }()
+
+    @ViewBuilder
+    private var menuItems: some View {
+        Button("Reveal in Finder") {
+            revealInFinder()
+        }
+        Button("Copy to Clipboard") {
+            copyToClipboard()
+        }
+    }
 
     private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
