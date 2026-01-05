@@ -6,6 +6,14 @@
     <description>Appcast for FolderBar (Sparkle)</description>
     <language>en</language>
     <item>
+      <title>0.1.9</title>
+      <pubDate>Mon, 05 Jan 2026 00:30:54 -0500</pubDate>
+      <sparkle:version>0.1.9</sparkle:version>
+      <sparkle:shortVersionString>0.1.9</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+      <enclosure url="https://github.com/jameskraus/FolderBar/releases/download/v0.1.9/FolderBar-0.1.9.zip" length="3303838" type="application/octet-stream" sparkle:edSignature="zJwpX3SGO2NlZQuAp+Q+mmCO3qyazs2cYS3vXLgpPlNNno+zx6y8NYMhzAMmYOgrZtsOu+9aonHxNYEtYq8LAQ==" />
+      </item>
+    <item>
       <title>0.1.8</title>
       <pubDate>Tue, 30 Dec 2025 00:19:25 -0500</pubDate>
       <sparkle:version>0.1.8</sparkle:version>
