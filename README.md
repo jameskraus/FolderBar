@@ -16,13 +16,9 @@ Download the latest release DMG:
 
 https://github.com/jameskraus/FolderBar/releases/latest
 
-## Agent notes
+## Contributing
 
-Agent-oriented docs (product goals/non-goals, project structure, release workflow) live in `AGENTS.md`.
-
-## Building
-
-### Development build
+### Run dev build
 
 FolderBar runs as a packaged `.app` during development (Sparkle and signing behave differently outside a real bundle).
 
@@ -30,13 +26,7 @@ FolderBar runs as a packaged `.app` during development (Sparkle and signing beha
 ./Scripts/compile_and_run.sh
 ```
 
-If you just want a fast compile check:
-
-```bash
-swift build
-```
-
-### Development signing
+#### Signing dev build
 
 Set a signing identity once in `.env.local`:
 
@@ -46,15 +36,16 @@ SIGNING_IDENTITY="Apple Development: Your Name (TEAMID)"
 
 If `SIGNING_IDENTITY` is not set, packaging will fall back to ad-hoc signing.
 
-## Lint / Format
+### Lint / Format / Test
 
 ```bash
 brew install swiftformat swiftlint
 make format
 make lint
+swift test
 ```
 
-## Git Hooks (recommended)
+### Git hooks
 
 ```bash
 ./Scripts/install_git_hooks.sh
@@ -62,7 +53,7 @@ make lint
 
 This appends a call to the repo-managed hook into your local `.git/hooks/pre-push` (so existing hooks like `bd` keep working).
 
-## Release build + signing
+### Release build
 
 Both `Scripts/compile_and_run.sh` and `Scripts/release.sh` source `.env` and `.env.local` automatically (local overrides).
 
@@ -88,11 +79,9 @@ This produces + publishes:
 - GitHub Release assets
 - `appcast.xml` update committed to `main`
 
-## Test
+## Agent notes
 
-```bash
-swift test
-```
+Agent-oriented docs (product goals/non-goals, project structure, release workflow) live in `AGENTS.md`.
 
 ## Updates
 
