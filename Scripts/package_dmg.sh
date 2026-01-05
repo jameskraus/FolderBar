@@ -8,7 +8,7 @@ APP_DIR="${APP_DIR:-$OUTPUT_DIR/$APP_NAME.app}"
 DMG_VOLUME_NAME="${DMG_VOLUME_NAME:-$APP_NAME Installer}"
 DMG_BACKGROUND="${DMG_BACKGROUND:-$ROOT_DIR/Assets/Installer/FolderBar-DMG-Background@2x.png}"
 VERSION_FILE="$ROOT_DIR/version.env"
-ENV_FILES=("$ROOT_DIR/.env" "$ROOT_DIR/.env.local")
+ENV_FILES=("$ROOT_DIR/.env")
 
 for env_file in "${ENV_FILES[@]}"; do
   if [[ -f "$env_file" ]]; then

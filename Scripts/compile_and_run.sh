@@ -6,7 +6,7 @@ APP_NAME="FolderBar"
 CONFIG="${1:-${CONFIG:-debug}}"
 OUTPUT_DIR="${OUTPUT_DIR:-$ROOT_DIR/build}"
 PACKAGE_SCRIPT="$ROOT_DIR/Scripts/package_app.sh"
-ENV_FILES=("$ROOT_DIR/.env" "$ROOT_DIR/.env.local")
+ENV_FILES=("$ROOT_DIR/.env")
 BUNDLE_ID="${BUNDLE_ID:-com.folderbar.app}"
 
 cd "$ROOT_DIR"

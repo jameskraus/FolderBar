@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ENV_FILES=("$ROOT_DIR/.env" "$ROOT_DIR/.env.local")
+ENV_FILES=("$ROOT_DIR/.env")
 
 for env_file in "${ENV_FILES[@]}"; do
   if [[ -f "$env_file" ]]; then

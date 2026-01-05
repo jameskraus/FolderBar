@@ -11,7 +11,7 @@ APPCAST_PATH="$ROOT_DIR/appcast.xml"
 UPDATE_APPCAST_SCRIPT="$ROOT_DIR/Scripts/update_appcast.py"
 APPCAST_RELATIVE_PATH="appcast.xml"
 VERSION_FILE="$ROOT_DIR/version.env"
-ENV_FILES=("$ROOT_DIR/.env" "$ROOT_DIR/.env.local")
+ENV_FILES=("$ROOT_DIR/.env")
 
 for env_file in "${ENV_FILES[@]}"; do
   if [[ -f "$env_file" ]]; then

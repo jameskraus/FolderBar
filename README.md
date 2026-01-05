@@ -28,7 +28,7 @@ FolderBar runs as a packaged `.app` during development (Sparkle and signing beha
 
 #### Signing dev build
 
-Set a signing identity once in `.env.local`:
+Set a signing identity once in `.env`:
 
 ```bash
 SIGNING_IDENTITY="Apple Development: Your Name (TEAMID)"
@@ -55,7 +55,7 @@ This appends a call to the repo-managed hook into your local `.git/hooks/pre-pus
 
 ### Release build
 
-Both `Scripts/compile_and_run.sh` and `Scripts/release.sh` source `.env` and `.env.local` automatically (local overrides).
+Both `Scripts/compile_and_run.sh` and `Scripts/release.sh` source `.env` automatically.
 
 If someone tells you to release the app, do this:
 
@@ -63,7 +63,7 @@ If someone tells you to release the app, do this:
 2) Bump `version.env` (the release script reads `VERSION=` from here).
 3) Run `./Scripts/release.sh`.
 
-Pre-req: create a `.env` file with release signing + notarization values, and set `SPARKLE_PUBLIC_ED_KEY` in `.env.local`:
+Pre-req: create a `.env` file with release signing + notarization values, and set `SPARKLE_PUBLIC_ED_KEY` there too:
 
 ```bash
 RELEASE_SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)"
