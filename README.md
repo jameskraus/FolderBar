@@ -88,12 +88,12 @@ This produces + publishes:
 - GitHub Release assets
 - `appcast.xml` update committed to `main`
 
-## Updates
-
-Sparkle update/appcast/key details live in `docs/UPDATES.md`.
-
 ## Test
 
 ```bash
 swift test
 ```
+
+## Updates
+
+Sparkle update/appcast/key details live in `docs/UPDATES.md`.
