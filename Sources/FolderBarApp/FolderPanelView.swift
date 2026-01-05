@@ -196,6 +196,9 @@ private struct FolderItemRow: View {
     @State private var isHovering = false
     @State private var thumbnail: NSImage?
     @State private var videoDurationText: String?
+    @State private var rowFrame: CGRect = .zero
+    @State private var rightClickMonitor: Any?
+    @State private var menuHandler = RowMenuHandler()
 
     private let thumbnailSize: CGFloat = PanelLayout.thumbnailSize
 
@@ -246,12 +249,37 @@ private struct FolderItemRow: View {
             .menuIndicator(.hidden)
             .buttonStyle(.plain)
         }
-        .contentShape(Rectangle())
-        .contextMenu {
-            menuItems
-        }
         .padding(.vertical, PanelLayout.rowVerticalPadding)
         .padding(.horizontal, PanelLayout.rowHorizontalPadding)
+        .background(
+            GeometryReader { proxy in
+                Color.clear
+                    .preference(key: RowFramePreferenceKey.self, value: proxy.frame(in: .global))
+            }
+        )
+        .onPreferenceChange(RowFramePreferenceKey.self) { newFrame in
+            rowFrame = newFrame
+        }
+        .onAppear {
+            if rightClickMonitor == nil {
+                rightClickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.rightMouseDown]) { event in
+                    let mouse = NSEvent.mouseLocation
+                    if rowFrame.contains(mouse) {
+                        showContextMenu(using: event)
+                        return nil
+                    }
+                    return event
+                }
+            }
+            menuHandler.onReveal = { revealInFinder() }
+            menuHandler.onCopy = { copyToClipboard() }
+        }
+        .onDisappear {
+            if let rightClickMonitor {
+                NSEvent.removeMonitor(rightClickMonitor)
+                self.rightClickMonitor = nil
+            }
+        }
         .task(id: item.url) { @MainActor in
             thumbnail = nil
             videoDurationText = nil
@@ -307,6 +335,19 @@ private struct FolderItemRow: View {
         Button("Copy to Clipboard") {
             copyToClipboard()
         }
+    }
+
+    private func showContextMenu(using event: NSEvent) {
+        let menu = NSMenu()
+        let revealItem = NSMenuItem(title: "Reveal in Finder", action: #selector(RowMenuHandler.reveal), keyEquivalent: "")
+        revealItem.target = menuHandler
+        menu.addItem(revealItem)
+
+        let copyItem = NSMenuItem(title: "Copy to Clipboard", action: #selector(RowMenuHandler.copyItem), keyEquivalent: "")
+        copyItem.target = menuHandler
+        menu.addItem(copyItem)
+
+        NSMenu.popUpContextMenu(menu, with: event, for: NSApp.keyWindow?.contentView ?? NSApp.mainWindow?.contentView ?? NSView())
     }
 
     private static let dateFormatter: DateFormatter = {
@@ -367,5 +408,25 @@ private struct FolderItemRow: View {
 
         pasteboard.clearContents()
         pasteboard.writeObjects([pbItem])
+    }
+}
+
+private struct RowFramePreferenceKey: PreferenceKey {
+    static var defaultValue: CGRect = .zero
+    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+        value = nextValue()
+    }
+}
+
+private final class RowMenuHandler: NSObject {
+    var onReveal: (() -> Void)?
+    var onCopy: (() -> Void)?
+
+    @objc func reveal() {
+        onReveal?()
+    }
+
+    @objc func copyItem() {
+        onCopy?()
     }
 }
